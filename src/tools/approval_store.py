@@ -1,7 +1,9 @@
 import json
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
+
+_RETENTION_DAYS = 10
 
 
 class ApprovalStateStore:
@@ -23,6 +25,7 @@ class ApprovalStateStore:
         key = self._key(owner, repo, pull_number)
         previous = data["prs"].get(key, {})
 
+        now = self._now_iso()
         data["prs"][key] = {
             "owner": owner,
             "repo": repo,
@@ -34,7 +37,8 @@ class ApprovalStateStore:
             "doc_payloads": doc_payloads,
             "approval": previous.get("approval", {"approved": False}),
             "publication": previous.get("publication", {"published": False}),
-            "updated_at": self._now_iso(),
+            "created_at": previous.get("created_at", now),
+            "updated_at": now,
         }
         self._write_all(data)
 
@@ -52,6 +56,7 @@ class ApprovalStateStore:
         key = self._key(owner, repo, pull_number)
         record = data["prs"].get(key)
         if record is None:
+            now = self._now_iso()
             record = {
                 "owner": owner,
                 "repo": repo,
@@ -63,7 +68,8 @@ class ApprovalStateStore:
                 "doc_payloads": [],
                 "approval": {"approved": False},
                 "publication": {"published": False},
-                "updated_at": self._now_iso(),
+                "created_at": now,
+                "updated_at": now,
             }
 
         record["approval"] = {
@@ -125,8 +131,20 @@ class ApprovalStateStore:
 
         return payload
 
+    def _prune(self, payload: dict[str, Any]) -> None:
+        """Remove records whose created_at is older than _RETENTION_DAYS."""
+        cutoff = datetime.now(timezone.utc) - timedelta(days=_RETENTION_DAYS)
+        prs = payload.get("prs", {})
+        to_delete = [
+            k for k, v in prs.items()
+            if isinstance(v, dict) and self._parse_iso(v.get("created_at", "")) < cutoff
+        ]
+        for k in to_delete:
+            del prs[k]
+
     def _write_all(self, payload: dict[str, Any]) -> None:
         self._file_path.parent.mkdir(parents=True, exist_ok=True)
+        self._prune(payload)
         self._file_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
 
     @staticmethod
@@ -136,3 +154,10 @@ class ApprovalStateStore:
     @staticmethod
     def _now_iso() -> str:
         return datetime.now(timezone.utc).isoformat()
+
+    @staticmethod
+    def _parse_iso(value: str) -> datetime:
+        try:
+            return datetime.fromisoformat(value)
+        except (ValueError, TypeError):
+            return datetime.min.replace(tzinfo=timezone.utc)

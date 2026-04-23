@@ -53,3 +53,46 @@ class PublishedSQLDocPayload(BaseModel):
     filter_details: list[str]
     affected_objects: list[str]
     page_heading: str = ""
+
+
+class RepoPathMapping(BaseModel):
+    sql_path_prefix: str
+    parent_page_id: str
+
+
+class RepoGithubConfig(BaseModel):
+    owner: str
+    name: str
+    token: str = ""
+    api_base_url: str = "https://api.github.com"
+    webhook_secret: str = ""
+    approval_command: str = "/approve-sql-doc"
+    approval_label: str = "sql-doc-approved"
+
+
+class RepoLlmConfig(BaseModel):
+    api_key: str = ""
+    base_url: str = ""
+    model: str = ""
+    temperature: float = 0.1
+
+
+class RepoConfluenceConfig(BaseModel):
+    base_url: str
+    space: str
+    username: str
+    api_token: str
+    default_parent_page_id: str = ""
+    path_mappings: list[RepoPathMapping] = Field(default_factory=list)
+
+
+class RepoRegistrationRequest(BaseModel):
+    github: RepoGithubConfig
+    llm: RepoLlmConfig = Field(default_factory=RepoLlmConfig)
+    confluence: RepoConfluenceConfig
+
+
+class RepoRegistrationResponse(BaseModel):
+    ok: bool
+    message: str
+    repo: str

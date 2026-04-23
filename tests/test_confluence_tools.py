@@ -12,7 +12,7 @@ def test_publish_pr_record_creates_one_page_per_payload() -> None:
 
     created: list[tuple[str, str]] = []
     publisher._find_page_by_title = lambda title: None  # type: ignore[attr-defined]
-    publisher._create_page = lambda title, body: created.append((title, body)) or {"id": f"id-{len(created)}"}  # type: ignore[attr-defined]
+    publisher._create_page = lambda title, body, parent_page_id="": created.append((title, body, parent_page_id)) or {"id": f"id-{len(created)}"}  # type: ignore[attr-defined]
 
     record = {
         "doc_payloads": [
@@ -46,6 +46,7 @@ def test_publish_pr_record_creates_one_page_per_payload() -> None:
     assert len(created) == 2
     assert created[0][0] == "Technical Summary for - insert_sample.sql"
     assert created[1][0] == "Technical Summary for - update_sample.sql"
+    assert created[0][2] == "1"
 
 
 def test_build_file_page_body_contains_detailed_sql_sections() -> None:

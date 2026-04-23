@@ -84,6 +84,21 @@ YAML Config Loader
    - `github.api_base_url`, `github.token`, `github.approval.command`, `github.approval.label`
    - `confluence.base_url`, `confluence.space`, `confluence.parent_page_id`, `confluence.username`, `confluence.api_token`
 
+Repository Registration API (Multi-Repo)
+1. Register a repo with per-repo GitHub, LLM, and Confluence settings using `POST /repos/register`.
+2. Read registration by repo using `GET /repos/{owner}/{repo}`.
+3. Update registration using `PUT /repos/{owner}/{repo}`.
+4. Delete registration using `DELETE /repos/{owner}/{repo}`.
+5. Webhook processing automatically resolves repo-specific settings from the incoming `repository.full_name`.
+6. You can use a single file by setting `app.repo_registry_file: config/agent.yml`; registrations are saved under a top-level `repos:` section in that same YAML.
+
+Confluence Folder Mapping
+1. Per-repo registration supports `confluence.path_mappings` entries with:
+   - `sql_path_prefix`
+   - `parent_page_id`
+2. On publish, the longest matching `sql_path_prefix` chooses the target Confluence parent page.
+3. If no mapping matches, `confluence.default_parent_page_id` is used.
+
 Local Sample Run
 1. Put `.sql` files in `sample_input`
 2. Ensure `OPENAI_API_KEY` is set if you want live LLM output

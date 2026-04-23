@@ -37,6 +37,36 @@ def _as_float(value: Any, default: float) -> float:
 _app_config_file = _get_env("APP_CONFIG_FILE", "config/agent.yml")
 _yaml_config = load_yaml_config(_app_config_file)
 
+# If no top-level llm/github/confluence sections exist, promote the first registered
+# repo's config as global fallback so Settings resolves from repos: entries.
+_repos_raw = _yaml_config.get("repos", {})
+if isinstance(_repos_raw, dict) and _repos_raw:
+    _first_repo: dict[str, Any] = next(iter(_repos_raw.values()), {})
+    if isinstance(_first_repo, dict):
+        if "llm" in _first_repo and "llm" not in _yaml_config:
+            _yaml_config["llm"] = _first_repo["llm"]
+        if "github" in _first_repo and "github" not in _yaml_config:
+            _gh = _first_repo["github"]
+            _yaml_config["github"] = {
+                "api_base_url": _gh.get("api_base_url", "https://api.github.com"),
+                "token": _gh.get("token", ""),
+                "webhook_secret": _gh.get("webhook_secret", ""),
+                "approval": {
+                    "command": _gh.get("approval_command", "/approve-sql-doc"),
+                    "label": _gh.get("approval_label", "sql-doc-approved"),
+                    "state_file": _gh.get("approval_state_file", ".ai_sql_agent/approval_state.json"),
+                },
+            }
+        if "confluence" in _first_repo and "confluence" not in _yaml_config:
+            _cf = _first_repo["confluence"]
+            _yaml_config["confluence"] = {
+                "base_url": _cf.get("base_url", ""),
+                "space": _cf.get("space", ""),
+                "parent_page_id": _cf.get("default_parent_page_id", ""),
+                "username": _cf.get("username", ""),
+                "api_token": _cf.get("api_token", ""),
+            }
+
 
 def _get_setting_str(env_name: str, yaml_path: str, default: str = "") -> str:
     env_value = _get_env(env_name, "")
@@ -96,6 +126,7 @@ class Settings:
 
     app_host: str = _get_setting_str("APP_HOST", "app.host", "0.0.0.0")
     app_port: int = _get_setting_int("APP_PORT", "app.port", 8000)
+    repo_registry_file: str = _get_setting_str("REPO_REGISTRY_FILE", "app.repo_registry_file", "config/agent.yml")
 
 
 settings = Settings()
