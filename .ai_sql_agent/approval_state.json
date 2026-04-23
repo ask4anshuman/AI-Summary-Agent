@@ -1,0 +1,595 @@
+{
+  "prs": {
+    "ask4anshuman/Agentic-SQL-Repo#1": {
+      "owner": "ask4anshuman",
+      "repo": "Agentic-SQL-Repo",
+      "pull_number": 1,
+      "head_sha": "b2512c18bcec9271abc5d9c763f0181286b69b2d",
+      "modified_files": [
+        "dml/insert_sample.sql",
+        "dml/update_sample.sql"
+      ],
+      "new_files": [],
+      "doc_payloads": [
+        {
+          "filename": "dml/insert_sample.sql",
+          "summary": "The SQL change involves an update to an insert statement in the employees table, where the employee_id for Michael Johnson has been changed from 1003 to 1004. This modification may affect data integrity if there are dependencies on the employee_id values in other parts of the application or database.",
+          "markdown": "## SQL Change Summary\n- **Change Type:** Data Update\n- **Impact Level:** medium\n\nThe SQL change involves an update to an insert statement in the employees table, where the employee_id for Michael Johnson has been changed from 1003 to 1004. This modification may affect data integrity if there are dependencies on the employee_id values in other parts of the application or database.\n\n## Affected Objects\n- None detected\n\n## Suggested Documentation Updates\n- Update the employee_id documentation for Michael Johnson to reflect the new value of 1004.\n- Review and update any data integrity guidelines related to employee_id dependencies in the application.\n- Revise the insert statement examples in the documentation to include the updated employee_id for Michael Johnson.\n\n## Rationale\nThe change in employee_id from 1003 to 1004 for Michael Johnson may impact data integrity and any references to this employee_id in the application or database. Updating the documentation will ensure consistency and prevent potential issues.\n\n## SQL Sanity Checks\n- No obvious syntax warnings\n",
+          "change_type": "Data Update",
+          "impact_level": "medium",
+          "affected_objects": [],
+          "suggested_doc_updates": [
+            "Update the employee_id documentation for Michael Johnson to reflect the new value of 1004.",
+            "Review and update any data integrity guidelines related to employee_id dependencies in the application.",
+            "Revise the insert statement examples in the documentation to include the updated employee_id for Michael Johnson."
+          ],
+          "rationale": "The change in employee_id from 1003 to 1004 for Michael Johnson may impact data integrity and any references to this employee_id in the application or database. Updating the documentation will ensure consistency and prevent potential issues."
+        },
+        {
+          "filename": "dml/update_sample.sql",
+          "summary": "The SQL script modifies employee salary updates, significantly reducing the salary for a specific employee from 78,000 to 10,000. Additionally, it extends the condition for a bulk salary increase from employees hired before January 1, 2023, to those hired before January 1, 2026, potentially affecting a larger group of employees.",
+          "markdown": "## SQL Change Summary\n- **Change Type:** Salary Update\n- **Impact Level:** high\n\nThe SQL script modifies employee salary updates, significantly reducing the salary for a specific employee from 78,000 to 10,000. Additionally, it extends the condition for a bulk salary increase from employees hired before January 1, 2023, to those hired before January 1, 2026, potentially affecting a larger group of employees.\n\n## Affected Objects\n- None detected\n\n## Suggested Documentation Updates\n- Update the employee salary adjustment policy to reflect the new salary cap for specific employees.\n- Revise the guidelines for bulk salary increases to include the new hire date condition of January 1, 2026.\n- Document the rationale behind the significant salary reduction for employee ID 1001 to ensure clarity and transparency.\n\n## Rationale\nThe changes in the SQL script involve a drastic reduction in salary for a specific employee and an extension of the eligibility criteria for bulk salary increases, which could impact employee morale and compensation strategies. Updating the documentation will ensure that all stakeholders are aware of these changes and their implications.\n\n## SQL Sanity Checks\n- No obvious syntax warnings\n",
+          "change_type": "Salary Update",
+          "impact_level": "high",
+          "affected_objects": [],
+          "suggested_doc_updates": [
+            "Update the employee salary adjustment policy to reflect the new salary cap for specific employees.",
+            "Revise the guidelines for bulk salary increases to include the new hire date condition of January 1, 2026.",
+            "Document the rationale behind the significant salary reduction for employee ID 1001 to ensure clarity and transparency."
+          ],
+          "rationale": "The changes in the SQL script involve a drastic reduction in salary for a specific employee and an extension of the eligibility criteria for bulk salary increases, which could impact employee morale and compensation strategies. Updating the documentation will ensure that all stakeholders are aware of these changes and their implications."
+        }
+      ],
+      "approval": {
+        "approved": true,
+        "source": "command",
+        "actor": "ask4anshuman",
+        "detail": "/approve-sql-doc",
+        "updated_at": "2026-04-22T22:26:29.963943+00:00"
+      },
+      "publication": {
+        "published": true,
+        "message": "Confluence page created",
+        "page_id": "4227073",
+        "title": "Agentic-SQL-Repo PR-1 SQL Summary",
+        "updated_at": "2026-04-22T22:29:44.709485+00:00"
+      },
+      "updated_at": "2026-04-22T22:29:44.709523+00:00"
+    },
+    "ask4anshuman/Agentic-SQL-Repo#2": {
+      "owner": "ask4anshuman",
+      "repo": "Agentic-SQL-Repo",
+      "pull_number": 2,
+      "head_sha": "2f21cf0a9cfc3db4bbe2bc29c7e7268600f1b5b7",
+      "modified_files": [
+        "dml/delete_sample.sql",
+        "soft/create_function.sql"
+      ],
+      "new_files": [],
+      "doc_payloads": [
+        {
+          "filename": "dml/delete_sample.sql",
+          "summary": "The SQL script has been modified to change the cutoff date for deleting employees from June 1, 2024, to June 1, 2026. This change will affect the records of employees hired after the new specified date, potentially retaining more employees than previously intended.",
+          "markdown": "## SQL Change Summary\n- **Change Type:** Date Update\n- **Impact Level:** medium\n\nThe SQL script has been modified to change the cutoff date for deleting employees from June 1, 2024, to June 1, 2026. This change will affect the records of employees hired after the new specified date, potentially retaining more employees than previously intended.\n\n## Affected Objects\n- None detected\n\n## Suggested Documentation Updates\n- Update the section on employee deletion criteria to reflect the new cutoff date of June 1, 2026.\n- Revise any documentation related to employee retention policies to account for the extended retention period for employees hired after the new cutoff date.\n- Modify any examples or use cases that reference the previous cutoff date of June 1, 2024, to ensure consistency with the new date.\n\n## Rationale\nThe change in the cutoff date for deleting employees impacts the retention of records for employees hired after June 1, 2026. Updating the documentation will ensure that users are aware of the new criteria and its implications on employee management.\n\n## SQL Sanity Checks\n- No obvious syntax warnings\n",
+          "change_type": "Date Update",
+          "impact_level": "medium",
+          "affected_objects": [],
+          "suggested_doc_updates": [
+            "Update the section on employee deletion criteria to reflect the new cutoff date of June 1, 2026.",
+            "Revise any documentation related to employee retention policies to account for the extended retention period for employees hired after the new cutoff date.",
+            "Modify any examples or use cases that reference the previous cutoff date of June 1, 2024, to ensure consistency with the new date."
+          ],
+          "rationale": "The change in the cutoff date for deleting employees impacts the retention of records for employees hired after June 1, 2026. Updating the documentation will ensure that users are aware of the new criteria and its implications on employee management."
+        },
+        {
+          "filename": "soft/create_function.sql",
+          "summary": "The SQL change modifies the calculation of a bonus based on performance ratings. Specifically, the bonus percentage for ratings below 3 has been increased from 5% to 25%, which could significantly impact employee compensation. This change may lead to higher payroll expenses and could affect employee motivation and retention.",
+          "markdown": "## SQL Change Summary\n- **Change Type:** Bonus Calculation Update\n- **Impact Level:** high\n\nThe SQL change modifies the calculation of a bonus based on performance ratings. Specifically, the bonus percentage for ratings below 3 has been increased from 5% to 25%, which could significantly impact employee compensation. This change may lead to higher payroll expenses and could affect employee motivation and retention.\n\n## Affected Objects\n- None detected\n\n## Suggested Documentation Updates\n- Update the compensation policy documentation to reflect the new bonus percentage for performance ratings below 3.\n- Revise the employee performance evaluation guidelines to include the impact of the new bonus structure on overall compensation.\n- Add a section on the potential financial implications of the updated bonus calculation for payroll budgeting.\n- Include examples of how the new bonus percentage affects total compensation for employees with different salary levels.\n\n## Rationale\nThe changes to the bonus calculation significantly alter employee compensation structures, which necessitates updates to relevant documentation to ensure clarity and alignment with the new policy.\n\n## SQL Sanity Checks\n- No obvious syntax warnings\n",
+          "change_type": "Bonus Calculation Update",
+          "impact_level": "high",
+          "affected_objects": [],
+          "suggested_doc_updates": [
+            "Update the compensation policy documentation to reflect the new bonus percentage for performance ratings below 3.",
+            "Revise the employee performance evaluation guidelines to include the impact of the new bonus structure on overall compensation.",
+            "Add a section on the potential financial implications of the updated bonus calculation for payroll budgeting.",
+            "Include examples of how the new bonus percentage affects total compensation for employees with different salary levels."
+          ],
+          "rationale": "The changes to the bonus calculation significantly alter employee compensation structures, which necessitates updates to relevant documentation to ensure clarity and alignment with the new policy."
+        }
+      ],
+      "approval": {
+        "approved": true,
+        "source": "command",
+        "actor": "ask4anshuman",
+        "detail": "/approve-sql-doc",
+        "updated_at": "2026-04-23T20:05:43.777046+00:00"
+      },
+      "publication": {
+        "published": true,
+        "message": "Confluence page created",
+        "page_id": "4685825",
+        "title": "Agentic-SQL-Repo PR-2 SQL Summary",
+        "updated_at": "2026-04-23T20:05:54.093680+00:00"
+      },
+      "updated_at": "2026-04-23T20:05:54.093704+00:00"
+    },
+    "ask4anshuman/Agentic-SQL-Repo#3": {
+      "owner": "ask4anshuman",
+      "repo": "Agentic-SQL-Repo",
+      "pull_number": 3,
+      "head_sha": "45a522babb0601e8601e9752cec1f37893939973",
+      "modified_files": [
+        "dml/update_sample.sql",
+        "soft/create_view.sql"
+      ],
+      "new_files": [],
+      "doc_payloads": [
+        {
+          "filename": "dml/update_sample.sql",
+          "summary": "The SQL update statement has been modified to adjust employee salaries based on their hire date. The condition now targets employees hired before January 1, 2000, instead of January 1, 2026, which significantly changes the scope of the salary increase.",
+          "markdown": "## SQL Change Summary\n- **Change Type:** Update Condition Change\n- **Impact Level:** high\n\nThe SQL update statement has been modified to adjust employee salaries based on their hire date. The condition now targets employees hired before January 1, 2000, instead of January 1, 2026, which significantly changes the scope of the salary increase.\n\n## Affected Objects\n- None detected\n\n## Suggested Documentation Updates\n- Update the section on salary adjustment criteria to reflect the new hire date condition.\n- Revise the examples of SQL update statements to include the new date condition for salary increases.\n- Modify any related documentation on employee salary policies to clarify the impact of hire date on salary adjustments.\n\n## Rationale\nThe change in the SQL update statement significantly alters the criteria for salary adjustments, which affects how employees are evaluated for raises based on their hire date. Updating the documentation ensures that users understand the new parameters and their implications.\n\n## SQL Sanity Checks\n- No obvious syntax warnings\n",
+          "change_type": "Update Condition Change",
+          "impact_level": "high",
+          "affected_objects": [],
+          "suggested_doc_updates": [
+            "Update the section on salary adjustment criteria to reflect the new hire date condition.",
+            "Revise the examples of SQL update statements to include the new date condition for salary increases.",
+            "Modify any related documentation on employee salary policies to clarify the impact of hire date on salary adjustments."
+          ],
+          "rationale": "The change in the SQL update statement significantly alters the criteria for salary adjustments, which affects how employees are evaluated for raises based on their hire date. Updating the documentation ensures that users understand the new parameters and their implications."
+        },
+        {
+          "filename": "soft/create_view.sql",
+          "summary": "The SQL change modifies a view that retrieves employee data by altering the filter condition from 'Active' to 'Inactive'. This adjustment will result in the view displaying information about inactive employees instead of active ones, which may impact reporting and analysis of workforce status.",
+          "markdown": "## SQL Change Summary\n- **Change Type:** View Modification\n- **Impact Level:** medium\n\nThe SQL change modifies a view that retrieves employee data by altering the filter condition from 'Active' to 'Inactive'. This adjustment will result in the view displaying information about inactive employees instead of active ones, which may impact reporting and analysis of workforce status.\n\n## Affected Objects\n- None detected\n\n## Suggested Documentation Updates\n- Update the documentation for the employee data view to reflect the change in filter condition from 'Active' to 'Inactive'.\n- Revise any reporting guidelines that reference the employee view to ensure they account for the inclusion of inactive employees.\n- Modify any training materials or user guides that explain how to use the employee data view to clarify the new focus on inactive employees.\n\n## Rationale\nThe change in the view's filter condition significantly alters the dataset being retrieved, which affects reporting and analysis of workforce status. Documentation must be updated to prevent confusion and ensure users understand the implications of this change.\n\n## SQL Sanity Checks\n- No obvious syntax warnings\n",
+          "change_type": "View Modification",
+          "impact_level": "medium",
+          "affected_objects": [],
+          "suggested_doc_updates": [
+            "Update the documentation for the employee data view to reflect the change in filter condition from 'Active' to 'Inactive'.",
+            "Revise any reporting guidelines that reference the employee view to ensure they account for the inclusion of inactive employees.",
+            "Modify any training materials or user guides that explain how to use the employee data view to clarify the new focus on inactive employees."
+          ],
+          "rationale": "The change in the view's filter condition significantly alters the dataset being retrieved, which affects reporting and analysis of workforce status. Documentation must be updated to prevent confusion and ensure users understand the implications of this change."
+        }
+      ],
+      "approval": {
+        "approved": true,
+        "source": "command",
+        "actor": "ask4anshuman",
+        "detail": "/approve-sql-doc",
+        "updated_at": "2026-04-23T20:10:54.140931+00:00"
+      },
+      "publication": {
+        "published": true,
+        "message": "Confluence pages published: 2",
+        "page_id": "4653058",
+        "title": "Technical Summary for - update_sample.sql",
+        "updated_at": "2026-04-23T20:11:00.989996+00:00"
+      },
+      "updated_at": "2026-04-23T20:11:00.990024+00:00"
+    },
+    "ask4anshuman/Agentic-SQL-Repo#4": {
+      "owner": "ask4anshuman",
+      "repo": "Agentic-SQL-Repo",
+      "pull_number": 4,
+      "head_sha": "1b58978a615277973eedf30c02c49759d96bdd1c",
+      "modified_files": [
+        "ddl/alter_tables.sql",
+        "dml/update_sample.sql"
+      ],
+      "new_files": [],
+      "doc_payloads": [
+        {
+          "filename": "ddl/alter_tables.sql",
+          "summary": "The SQL change involves modifying the 'salary' column in the 'employees' table to allow for a larger decimal value, increasing its precision from 12 to 14. This adjustment aims to accommodate potential future salary increases and ensure accurate financial reporting. Additionally, an index is being created to enhance performance when querying employee data by department.",
+          "markdown": "## SQL Change Summary\n- **Change Type:** Column Modification\n- **Impact Level:** medium\n\nThe SQL change involves modifying the 'salary' column in the 'employees' table to allow for a larger decimal value, increasing its precision from 12 to 14. This adjustment aims to accommodate potential future salary increases and ensure accurate financial reporting. Additionally, an index is being created to enhance performance when querying employee data by department.\n\n## Affected Objects\n- None detected\n\n## Suggested Documentation Updates\n- Update the database schema documentation to reflect the new precision of the 'salary' column in the 'employees' table.\n- Revise the financial reporting guidelines to include the implications of the increased salary precision.\n- Add a section on indexing strategies that explains the new index 'idx_employee_department' and its purpose for performance optimization.\n\n## Rationale\nThe changes to the 'salary' column and the addition of an index require updates to ensure that the documentation accurately reflects the current database structure and performance considerations.\n\n## SQL Sanity Checks\n- No obvious syntax warnings\n",
+          "change_type": "Column Modification",
+          "impact_level": "medium",
+          "affected_objects": [],
+          "suggested_doc_updates": [
+            "Update the database schema documentation to reflect the new precision of the 'salary' column in the 'employees' table.",
+            "Revise the financial reporting guidelines to include the implications of the increased salary precision.",
+            "Add a section on indexing strategies that explains the new index 'idx_employee_department' and its purpose for performance optimization."
+          ],
+          "rationale": "The changes to the 'salary' column and the addition of an index require updates to ensure that the documentation accurately reflects the current database structure and performance considerations."
+        },
+        {
+          "filename": "dml/update_sample.sql",
+          "summary": "The SQL update statement for employee ID 1001 has been modified to change the salary from 80,000 to 10,000. This significant reduction in salary may impact employee morale and financial planning within the organization.",
+          "markdown": "## SQL Change Summary\n- **Change Type:** Salary Update\n- **Impact Level:** high\n\nThe SQL update statement for employee ID 1001 has been modified to change the salary from 80,000 to 10,000. This significant reduction in salary may impact employee morale and financial planning within the organization.\n\n## Affected Objects\n- None detected\n\n## Suggested Documentation Updates\n- Employee Salary Change Policy\n- Employee Morale and Financial Planning Guidelines\n- SQL Update Statement Documentation\n- Change Management Procedures\n\n## Rationale\nThe significant reduction in salary for employee ID 1001 necessitates updates to documentation regarding salary policies, potential impacts on employee morale, and the procedures for managing such changes.\n\n## SQL Sanity Checks\n- No obvious syntax warnings\n",
+          "change_type": "Salary Update",
+          "impact_level": "high",
+          "affected_objects": [],
+          "suggested_doc_updates": [
+            "Employee Salary Change Policy",
+            "Employee Morale and Financial Planning Guidelines",
+            "SQL Update Statement Documentation",
+            "Change Management Procedures"
+          ],
+          "rationale": "The significant reduction in salary for employee ID 1001 necessitates updates to documentation regarding salary policies, potential impacts on employee morale, and the procedures for managing such changes."
+        }
+      ],
+      "approval": {
+        "approved": true,
+        "source": "command",
+        "actor": "ask4anshuman",
+        "detail": "/approve-sql-doc",
+        "updated_at": "2026-04-23T20:24:06.915524+00:00"
+      },
+      "publication": {
+        "published": true,
+        "message": "Confluence pages published: 2",
+        "page_id": "4751362",
+        "title": "Technical Summary for - alter_tables.sql",
+        "updated_at": "2026-04-23T20:24:23.702899+00:00"
+      },
+      "updated_at": "2026-04-23T20:24:23.702911+00:00"
+    },
+    "ask4anshuman/Agentic-SQL-Repo#5": {
+      "owner": "ask4anshuman",
+      "repo": "Agentic-SQL-Repo",
+      "pull_number": 5,
+      "head_sha": "2750b86f85aa2086809468d783dfc172f8287e26",
+      "modified_files": [
+        "dml/update_sample.sql"
+      ],
+      "new_files": [
+        "dml/new_insert_sample.sql"
+      ],
+      "doc_payloads": [
+        {
+          "filename": "dml/update_sample.sql",
+          "summary": "The SQL update statement for employee ID 1001 has been modified to significantly increase the salary from 10,000 to 500,000. This change could have substantial implications for payroll and budgeting within the organization.",
+          "markdown": "## SQL Change Summary\n- **Change Type:** Salary Update\n- **Impact Level:** high\n\nThe SQL update statement for employee ID 1001 has been modified to significantly increase the salary from 10,000 to 500,000. This change could have substantial implications for payroll and budgeting within the organization.\n\n## Affected Objects\n- None detected\n\n## Suggested Documentation Updates\n- Update the payroll policy documentation to reflect the new salary range for employees.\n- Revise the budgeting guidelines to account for significant salary increases and their impact on overall payroll expenses.\n- Add a section in the employee handbook regarding salary adjustments and the criteria for such changes.\n\n## Rationale\nThe substantial increase in salary for employee ID 1001 from 10,000 to 500,000 necessitates updates to payroll policies, budgeting guidelines, and employee handbooks to ensure all stakeholders are informed and compliant with the new financial implications.\n\n## SQL Sanity Checks\n- No obvious syntax warnings\n",
+          "change_type": "Salary Update",
+          "impact_level": "high",
+          "affected_objects": [],
+          "suggested_doc_updates": [
+            "Update the payroll policy documentation to reflect the new salary range for employees.",
+            "Revise the budgeting guidelines to account for significant salary increases and their impact on overall payroll expenses.",
+            "Add a section in the employee handbook regarding salary adjustments and the criteria for such changes."
+          ],
+          "rationale": "The substantial increase in salary for employee ID 1001 from 10,000 to 500,000 necessitates updates to payroll policies, budgeting guidelines, and employee handbooks to ensure all stakeholders are informed and compliant with the new financial implications."
+        }
+      ],
+      "approval": {
+        "approved": true,
+        "source": "command",
+        "actor": "ask4anshuman",
+        "detail": "/approve-sql-doc",
+        "updated_at": "2026-04-23T20:35:09.452834+00:00"
+      },
+      "publication": {
+        "published": true,
+        "message": "Confluence pages published: 2",
+        "page_id": "4751385",
+        "title": "Technical Summary for - new_insert_sample.sql",
+        "pages": [
+          {
+            "filename": "dml/new_insert_sample.sql",
+            "page_id": "4751385",
+            "title": "Technical Summary for - new_insert_sample.sql",
+            "url": "https://ask4anshuman.atlassian.net/wiki/pages/viewpage.action?pageId=4751385"
+          },
+          {
+            "filename": "dml/update_sample.sql",
+            "page_id": "4653058",
+            "title": "Technical Summary for - update_sample.sql",
+            "url": "https://ask4anshuman.atlassian.net/wiki/pages/viewpage.action?pageId=4653058"
+          }
+        ],
+        "updated_at": "2026-04-23T20:35:26.016125+00:00"
+      },
+      "updated_at": "2026-04-23T20:35:26.016158+00:00"
+    },
+    "ask4anshuman/Agentic-SQL-Repo#6": {
+      "owner": "ask4anshuman",
+      "repo": "Agentic-SQL-Repo",
+      "pull_number": 6,
+      "head_sha": "b27170a1596987f884583736b61fefdff522bf5d",
+      "modified_files": [
+        "dml/update_sample.sql"
+      ],
+      "new_files": [
+        "dml/new_select_sample.sql"
+      ],
+      "doc_payloads": [
+        {
+          "filename": "dml/update_sample.sql",
+          "summary": "The SQL update statement modifies the salary of an employee identified by employee_id 1001 from 500,000 to 800,000. This change reflects an increase in compensation, which may impact budget considerations and employee satisfaction.",
+          "markdown": "## SQL Change Summary\n- **Change Type:** Salary Update\n- **Impact Level:** medium\n\nThe SQL update statement modifies the salary of an employee identified by employee_id 1001 from 500,000 to 800,000. This change reflects an increase in compensation, which may impact budget considerations and employee satisfaction.\n\n## Affected Objects\n- None detected\n\n## Suggested Documentation Updates\n- Employee Compensation Policy\n- Budget Impact Analysis Procedures\n- Employee Satisfaction and Retention Strategies\n- SQL Update Statement Documentation\n\n## Rationale\nThe change in salary for employee_id 1001 necessitates updates to the documentation regarding compensation policies, budget considerations, and employee satisfaction strategies to reflect the new salary and its implications.\n\n## SQL Sanity Checks\n- No obvious syntax warnings\n",
+          "change_type": "Salary Update",
+          "impact_level": "medium",
+          "affected_objects": [],
+          "suggested_doc_updates": [
+            "Employee Compensation Policy",
+            "Budget Impact Analysis Procedures",
+            "Employee Satisfaction and Retention Strategies",
+            "SQL Update Statement Documentation"
+          ],
+          "rationale": "The change in salary for employee_id 1001 necessitates updates to the documentation regarding compensation policies, budget considerations, and employee satisfaction strategies to reflect the new salary and its implications."
+        }
+      ],
+      "approval": {
+        "approved": true,
+        "source": "command",
+        "actor": "ask4anshuman",
+        "detail": "/approve-sql-doc",
+        "updated_at": "2026-04-23T20:44:54.739509+00:00"
+      },
+      "publication": {
+        "published": true,
+        "message": "Confluence pages published: 2",
+        "page_id": "4653074",
+        "title": "Technical Summary for - new_select_sample.sql",
+        "pages": [
+          {
+            "filename": "dml/new_select_sample.sql",
+            "page_id": "4653074",
+            "title": "Technical Summary for - new_select_sample.sql",
+            "url": "https://ask4anshuman.atlassian.net/wiki/pages/viewpage.action?pageId=4653074"
+          },
+          {
+            "filename": "dml/update_sample.sql",
+            "page_id": "4653058",
+            "title": "Technical Summary for - update_sample.sql",
+            "url": "https://ask4anshuman.atlassian.net/wiki/pages/viewpage.action?pageId=4653058"
+          }
+        ],
+        "updated_at": "2026-04-23T20:45:16.392285+00:00"
+      },
+      "updated_at": "2026-04-23T20:45:16.392319+00:00"
+    },
+    "ask4anshuman/Agentic-SQL-Repo#7": {
+      "owner": "ask4anshuman",
+      "repo": "Agentic-SQL-Repo",
+      "pull_number": 7,
+      "head_sha": "5c679c3b588e7f3a9de368b72f66853ba5871927",
+      "modified_files": [
+        "dml/update_sample.sql"
+      ],
+      "new_files": [
+        "dml/new_delete_sample.sql"
+      ],
+      "deleted_files": [],
+      "doc_payloads": [
+        {
+          "filename": "dml/update_sample.sql",
+          "summary": "The SQL script updates the salary of a specific employee, changing it from 10,000 to 505,050. This significant increase may impact payroll budgets and employee compensation structures. Stakeholders should review the implications of this change on overall salary distribution and financial planning.",
+          "markdown": "## SQL Change Summary\n- **Change Type:** Salary Update\n- **Impact Level:** high\n\nThe SQL script updates the salary of a specific employee, changing it from 10,000 to 505,050. This significant increase may impact payroll budgets and employee compensation structures. Stakeholders should review the implications of this change on overall salary distribution and financial planning.\n\n## Affected Objects\n- None detected\n\n## Suggested Documentation Updates\n- Employee Compensation Policy\n- Payroll Budgeting Guidelines\n- Salary Adjustment Procedures\n- Financial Planning and Forecasting Documentation\n\n## Rationale\nThe significant salary increase from 10,000 to 505,050 necessitates updates to documentation related to employee compensation, payroll budgeting, and financial planning to ensure stakeholders are aware of the implications on salary distribution and overall budget management.\n\n## SQL Sanity Checks\n- No obvious syntax warnings\n",
+          "change_type": "Salary Update",
+          "impact_level": "high",
+          "affected_objects": [],
+          "suggested_doc_updates": [
+            "Employee Compensation Policy",
+            "Payroll Budgeting Guidelines",
+            "Salary Adjustment Procedures",
+            "Financial Planning and Forecasting Documentation"
+          ],
+          "rationale": "The significant salary increase from 10,000 to 505,050 necessitates updates to documentation related to employee compensation, payroll budgeting, and financial planning to ensure stakeholders are aware of the implications on salary distribution and overall budget management."
+        }
+      ],
+      "approval": {
+        "approved": true,
+        "source": "command",
+        "actor": "ask4anshuman",
+        "detail": "/approve-sql-doc",
+        "updated_at": "2026-04-23T20:49:16.551917+00:00"
+      },
+      "publication": {
+        "published": false,
+        "message": "Failed to create Confluence page for Technical Summary for - new_delete_sample.sql",
+        "page_id": "",
+        "title": "",
+        "pages": [],
+        "updated_at": "2026-04-23T20:55:47.379803+00:00"
+      },
+      "updated_at": "2026-04-23T20:55:47.379824+00:00"
+    },
+    "ask4anshuman/Agentic-SQL-Repo#8": {
+      "owner": "ask4anshuman",
+      "repo": "Agentic-SQL-Repo",
+      "pull_number": 8,
+      "head_sha": "e6215e1a16259327fff300484bb8e061e820bec3",
+      "modified_files": [
+        "dml/update_sample.sql"
+      ],
+      "new_files": [],
+      "deleted_files": [
+        "dml/insert_sample.sql"
+      ],
+      "doc_payloads": [
+        {
+          "filename": "dml/update_sample.sql",
+          "summary": "The SQL update statement modifies the salary of an employee identified by employee_id 1001. The salary is significantly increased from 800,000 to 50,500,000, which could have substantial implications for payroll and budgeting.",
+          "markdown": "## SQL Change Summary\n- **Change Type:** Salary Update\n- **Impact Level:** high\n\nThe SQL update statement modifies the salary of an employee identified by employee_id 1001. The salary is significantly increased from 800,000 to 50,500,000, which could have substantial implications for payroll and budgeting.\n\n## Affected Objects\n- None detected\n\n## Suggested Documentation Updates\n- Employee Salary Update Procedures\n- Payroll Impact Analysis Guidelines\n- Budgeting and Financial Forecasting Documentation\n- Employee Compensation Policy\n- Change Management Process for Salary Adjustments\n\n## Rationale\nThe significant increase in salary from 800,000 to 50,500,000 for employee_id 1001 necessitates updates to documentation related to salary adjustments, payroll implications, budgeting, and compensation policies to ensure all stakeholders are informed and compliant with the changes.\n\n## SQL Sanity Checks\n- No obvious syntax warnings\n",
+          "change_type": "Salary Update",
+          "impact_level": "high",
+          "affected_objects": [],
+          "suggested_doc_updates": [
+            "Employee Salary Update Procedures",
+            "Payroll Impact Analysis Guidelines",
+            "Budgeting and Financial Forecasting Documentation",
+            "Employee Compensation Policy",
+            "Change Management Process for Salary Adjustments"
+          ],
+          "rationale": "The significant increase in salary from 800,000 to 50,500,000 for employee_id 1001 necessitates updates to documentation related to salary adjustments, payroll implications, budgeting, and compensation policies to ensure all stakeholders are informed and compliant with the changes."
+        }
+      ],
+      "approval": {
+        "approved": true,
+        "source": "command",
+        "actor": "ask4anshuman",
+        "detail": "/approve-sql-doc",
+        "updated_at": "2026-04-23T20:57:40.721254+00:00"
+      },
+      "publication": {
+        "published": true,
+        "message": "Confluence pages published: 2",
+        "page_id": "4653058",
+        "title": "Technical Summary for - update_sample.sql",
+        "pages": [
+          {
+            "filename": "dml/update_sample.sql",
+            "page_id": "4653058",
+            "title": "Technical Summary for - update_sample.sql",
+            "url": "https://ask4anshuman.atlassian.net/wiki/pages/viewpage.action?pageId=4653058"
+          },
+          {
+            "filename": "dml/insert_sample.sql",
+            "page_id": "4685844",
+            "title": "Technical Summary for - insert_sample.sql",
+            "url": "https://ask4anshuman.atlassian.net/wiki/pages/viewpage.action?pageId=4685844"
+          }
+        ],
+        "updated_at": "2026-04-23T20:57:50.920620+00:00"
+      },
+      "updated_at": "2026-04-23T20:57:50.920644+00:00"
+    },
+    "ask4anshuman/Agentic-SQL-Repo#9": {
+      "owner": "ask4anshuman",
+      "repo": "Agentic-SQL-Repo",
+      "pull_number": 9,
+      "head_sha": "44e818b6c47a4675d44c70c964185dd9dda592cf",
+      "modified_files": [
+        "dml/update_sample.sql",
+        "soft/create_view.sql"
+      ],
+      "new_files": [],
+      "deleted_files": [],
+      "doc_payloads": [
+        {
+          "filename": "dml/update_sample.sql",
+          "summary": "The SQL script has been modified to update the salary of an employee with ID 1001 from a significantly high value to a more reasonable amount. This change may reflect a correction in the salary data to align with company policies or market standards.",
+          "markdown": "## SQL Change Summary\n- **Change Type:** Salary Adjustment\n- **Impact Level:** medium\n\nThe SQL script has been modified to update the salary of an employee with ID 1001 from a significantly high value to a more reasonable amount. This change may reflect a correction in the salary data to align with company policies or market standards.\n\n## Affected Objects\n- None detected\n\n## Suggested Documentation Updates\n- Employee Salary Adjustment Procedures\n- Data Correction Policies\n- Salary Review and Approval Process\n- Employee Compensation Guidelines\n\n## Rationale\nThe change reflects a significant adjustment in the salary of an employee, indicating a need to ensure that documentation accurately reflects the processes and policies surrounding salary corrections and adjustments.\n\n## SQL Sanity Checks\n- No obvious syntax warnings\n",
+          "change_type": "Salary Adjustment",
+          "impact_level": "medium",
+          "affected_objects": [],
+          "suggested_doc_updates": [
+            "Employee Salary Adjustment Procedures",
+            "Data Correction Policies",
+            "Salary Review and Approval Process",
+            "Employee Compensation Guidelines"
+          ],
+          "rationale": "The change reflects a significant adjustment in the salary of an employee, indicating a need to ensure that documentation accurately reflects the processes and policies surrounding salary corrections and adjustments."
+        },
+        {
+          "filename": "soft/create_view.sql",
+          "summary": "The SQL change modifies a view by updating the filter condition for employee status from 'Inactive' to 'In-progress'. This adjustment will affect the data returned by the view, potentially including employees who are currently active in the hiring process. Stakeholders should be aware that this change may impact reporting and analysis related to employee status.",
+          "markdown": "## SQL Change Summary\n- **Change Type:** View Update\n- **Impact Level:** medium\n\nThe SQL change modifies a view by updating the filter condition for employee status from 'Inactive' to 'In-progress'. This adjustment will affect the data returned by the view, potentially including employees who are currently active in the hiring process. Stakeholders should be aware that this change may impact reporting and analysis related to employee status.\n\n## Affected Objects\n- None detected\n\n## Suggested Documentation Updates\n- Update the documentation for the employee status view to reflect the new filter condition from 'Inactive' to 'In-progress'.\n- Revise any reporting guidelines that reference the employee status view to include the implications of including 'In-progress' employees.\n- Add a note in the change log section to highlight the impact of this modification on data analysis and reporting.\n- Ensure that training materials for stakeholders include information about the updated view and its new data implications.\n\n## Rationale\nThe change in the filter condition for employee status in the view affects the data returned, which may influence reporting and analysis. Stakeholders need to be informed about these changes to ensure accurate interpretation of the data.\n\n## SQL Sanity Checks\n- No obvious syntax warnings\n",
+          "change_type": "View Update",
+          "impact_level": "medium",
+          "affected_objects": [],
+          "suggested_doc_updates": [
+            "Update the documentation for the employee status view to reflect the new filter condition from 'Inactive' to 'In-progress'.",
+            "Revise any reporting guidelines that reference the employee status view to include the implications of including 'In-progress' employees.",
+            "Add a note in the change log section to highlight the impact of this modification on data analysis and reporting.",
+            "Ensure that training materials for stakeholders include information about the updated view and its new data implications."
+          ],
+          "rationale": "The change in the filter condition for employee status in the view affects the data returned, which may influence reporting and analysis. Stakeholders need to be informed about these changes to ensure accurate interpretation of the data."
+        }
+      ],
+      "approval": {
+        "approved": true,
+        "source": "command",
+        "actor": "ask4anshuman",
+        "detail": "/approve-sql-doc",
+        "updated_at": "2026-04-23T21:09:54.965941+00:00"
+      },
+      "publication": {
+        "published": true,
+        "message": "Confluence pages published: 2",
+        "page_id": "4653058",
+        "title": "Technical Summary for - update_sample.sql",
+        "pages": [
+          {
+            "filename": "dml/update_sample.sql",
+            "page_id": "4653058",
+            "title": "Technical Summary for - update_sample.sql",
+            "url": "https://ask4anshuman.atlassian.net/wiki/pages/viewpage.action?pageId=4653058"
+          },
+          {
+            "filename": "soft/create_view.sql",
+            "page_id": "4718593",
+            "title": "Technical Summary for - create_view.sql",
+            "url": "https://ask4anshuman.atlassian.net/wiki/pages/viewpage.action?pageId=4718593"
+          }
+        ],
+        "updated_at": "2026-04-23T21:10:13.420127+00:00"
+      },
+      "updated_at": "2026-04-23T21:10:13.420153+00:00"
+    },
+    "ask4anshuman/Agentic-SQL-Repo#10": {
+      "owner": "ask4anshuman",
+      "repo": "Agentic-SQL-Repo",
+      "pull_number": 10,
+      "head_sha": "5d92d2f81d7712b12998b2793a389063b8feaf8b",
+      "modified_files": [
+        "ddl/alter_tables.sql",
+        "soft/create_trigger.sql"
+      ],
+      "new_files": [],
+      "deleted_files": [],
+      "doc_payloads": [
+        {
+          "filename": "ddl/alter_tables.sql",
+          "summary": "The SQL change involves modifying the 'employees' table by altering the 'phone_number' column to have a reduced character limit from 15 to 8. This change may impact how phone numbers are stored, potentially leading to data truncation for existing entries that exceed the new limit.",
+          "markdown": "## SQL Change Summary\n- **Change Type:** Column Alteration\n- **Impact Level:** medium\n\nThe SQL change involves modifying the 'employees' table by altering the 'phone_number' column to have a reduced character limit from 15 to 8. This change may impact how phone numbers are stored, potentially leading to data truncation for existing entries that exceed the new limit.\n\n## Affected Objects\n- None detected\n\n## Suggested Documentation Updates\n- Update the database schema documentation to reflect the new character limit for the 'phone_number' column in the 'employees' table.\n- Revise the data entry guidelines to ensure that phone numbers entered into the system do not exceed 8 characters.\n- Add a note regarding potential data truncation for existing phone number entries that exceed the new limit, and recommend a data migration strategy if necessary.\n\n## Rationale\nThe change to the 'phone_number' column's character limit may affect data integrity and user input processes, necessitating updates to documentation to prevent confusion and ensure compliance with the new schema.\n\n## SQL Sanity Checks\n- No obvious syntax warnings\n",
+          "change_type": "Column Alteration",
+          "impact_level": "medium",
+          "affected_objects": [],
+          "suggested_doc_updates": [
+            "Update the database schema documentation to reflect the new character limit for the 'phone_number' column in the 'employees' table.",
+            "Revise the data entry guidelines to ensure that phone numbers entered into the system do not exceed 8 characters.",
+            "Add a note regarding potential data truncation for existing phone number entries that exceed the new limit, and recommend a data migration strategy if necessary."
+          ],
+          "rationale": "The change to the 'phone_number' column's character limit may affect data integrity and user input processes, necessitating updates to documentation to prevent confusion and ensure compliance with the new schema."
+        },
+        {
+          "filename": "soft/create_trigger.sql",
+          "summary": "The SQL change modifies a trigger associated with the 'employees' table. Specifically, it alters the employee count update in the 'departments' table from incrementing by 1 to incrementing by 100 after each insert operation. This change could significantly affect the accuracy of department employee counts.",
+          "markdown": "## SQL Change Summary\n- **Change Type:** Trigger Update\n- **Impact Level:** high\n\nThe SQL change modifies a trigger associated with the 'employees' table. Specifically, it alters the employee count update in the 'departments' table from incrementing by 1 to incrementing by 100 after each insert operation. This change could significantly affect the accuracy of department employee counts.\n\n## Affected Objects\n- None detected\n\n## Suggested Documentation Updates\n- Update the trigger documentation for the 'employees' table to reflect the new employee count increment logic.\n- Revise the 'departments' table documentation to clarify the impact of the employee count update on department statistics.\n- Add a section on the implications of bulk employee insertions on department employee counts.\n\n## Rationale\nThe modification to the trigger changes how employee counts are updated in the 'departments' table, which could lead to discrepancies in reported employee numbers. Documentation must be updated to ensure users understand the new logic and its potential effects.\n\n## SQL Sanity Checks\n- No obvious syntax warnings\n",
+          "change_type": "Trigger Update",
+          "impact_level": "high",
+          "affected_objects": [],
+          "suggested_doc_updates": [
+            "Update the trigger documentation for the 'employees' table to reflect the new employee count increment logic.",
+            "Revise the 'departments' table documentation to clarify the impact of the employee count update on department statistics.",
+            "Add a section on the implications of bulk employee insertions on department employee counts."
+          ],
+          "rationale": "The modification to the trigger changes how employee counts are updated in the 'departments' table, which could lead to discrepancies in reported employee numbers. Documentation must be updated to ensure users understand the new logic and its potential effects."
+        }
+      ],
+      "approval": {
+        "approved": true,
+        "source": "command",
+        "actor": "ask4anshuman",
+        "detail": "/approve-sql-doc",
+        "updated_at": "2026-04-23T21:16:02.626541+00:00"
+      },
+      "publication": {
+        "published": true,
+        "message": "Confluence pages published: 2",
+        "page_id": "4751362",
+        "title": "Technical Summary for - alter_tables.sql",
+        "pages": [
+          {
+            "filename": "ddl/alter_tables.sql",
+            "page_id": "4751362",
+            "title": "Technical Summary for - alter_tables.sql",
+            "url": "https://ask4anshuman.atlassian.net/wiki/pages/viewpage.action?pageId=4751362"
+          },
+          {
+            "filename": "soft/create_trigger.sql",
+            "page_id": "4685875",
+            "title": "Technical Summary for - create_trigger.sql",
+            "url": "https://ask4anshuman.atlassian.net/wiki/pages/viewpage.action?pageId=4685875"
+          }
+        ],
+        "updated_at": "2026-04-23T21:16:25.927593+00:00"
+      },
+      "updated_at": "2026-04-23T21:16:25.927618+00:00"
+    }
+  }
+}

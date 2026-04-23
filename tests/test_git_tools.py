@@ -15,10 +15,11 @@ def test_extract_sql_file_changes_from_github_pr_files_filters_and_classifies() 
     payload = [
         {"filename": "db/changed.sql", "status": "modified", "patch": "@@ -1 +1 @@\n-select 1\n+select 2"},
         {"filename": "db/new_file.sql", "status": "added", "patch": "@@ -0,0 +1 @@\n+create table demo(id int);"},
+        {"filename": "db/legacy.sql", "status": "removed", "patch": "@@ -1 +0,0 @@\n-drop table legacy;"},
         {"filename": "docs/readme.md", "status": "modified", "patch": "@@ -1 +1 @@"},
     ]
 
     changes = extract_sql_file_changes_from_github_pr_files(payload)
 
-    assert [change.filename for change in changes] == ["db/changed.sql", "db/new_file.sql"]
-    assert [change.status for change in changes] == ["modified", "added"]
+    assert [change.filename for change in changes] == ["db/changed.sql", "db/new_file.sql", "db/legacy.sql"]
+    assert [change.status for change in changes] == ["modified", "added", "deleted"]

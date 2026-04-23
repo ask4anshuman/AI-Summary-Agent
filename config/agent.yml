@@ -2,8 +2,10 @@ llm:
   model: gpt-4o-mini
   temperature: 0.1
   pr_summary_max_chars: 280
+  openai_base_url: "https://api.openai.com/v1"
 
 github:
+  repo: "ask4anshuman/Agentic-SQL-Repo"
   api_base_url: https://api.github.com
   approval:
     command: /approve-sql-doc
@@ -11,11 +13,10 @@ github:
     state_file: .ai_sql_agent/approval_state.json
 
 confluence:
-  base_url: ""
-  space: ""
-  parent_page_id: ""
-  username: ""
-  api_token: ""
+  base_url: "https://ask4anshuman.atlassian.net/wiki"
+  space: "~712020e9a8b73325a347c490df3513526fcc64"
+  parent_page_id: "491521"
+  username: "ask4anshuman@gmail.com"
 
 app:
   host: 0.0.0.0

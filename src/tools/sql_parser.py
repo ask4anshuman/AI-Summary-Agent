@@ -19,6 +19,36 @@ OBJECT_PATTERNS = [
     re.compile(r"\bcreate\s+or\s+replace\s+package\s+([\w\.\"]+)", re.IGNORECASE),
 ]
 
+OBJECT_TYPE_PATTERNS = [
+    (re.compile(r"\bcreate\s+(?:or\s+replace\s+)?table\b", re.IGNORECASE), "TABLE"),
+    (re.compile(r"\bcreate\s+(?:or\s+replace\s+)?function\b", re.IGNORECASE), "FUNCTION"),
+    (re.compile(r"\bcreate\s+(?:or\s+replace\s+)?procedure\b", re.IGNORECASE), "PROCEDURE"),
+    (re.compile(r"\bcreate\s+(?:or\s+replace\s+)?trigger\b", re.IGNORECASE), "TRIGGER"),
+    (re.compile(r"\bcreate\s+(?:or\s+replace\s+)?package\b", re.IGNORECASE), "PACKAGE"),
+    (re.compile(r"\bview\b", re.IGNORECASE), "VIEW"),
+]
+
+TABLE_REFERENCE_PATTERNS = [
+    re.compile(r"\bfrom\s+([\w\.\"]+)", re.IGNORECASE),
+    re.compile(r"\bjoin\s+([\w\.\"]+)", re.IGNORECASE),
+    re.compile(r"\binsert\s+into\s+([\w\.\"]+)", re.IGNORECASE),
+    re.compile(r"\bupdate\s+([\w\.\"]+)", re.IGNORECASE),
+    re.compile(r"\bdelete\s+from\s+([\w\.\"]+)", re.IGNORECASE),
+    re.compile(r"\bmerge\s+into\s+([\w\.\"]+)", re.IGNORECASE),
+    re.compile(r"\bcreate\s+table\s+([\w\.\"]+)", re.IGNORECASE),
+    re.compile(r"\balter\s+table\s+([\w\.\"]+)", re.IGNORECASE),
+]
+
+JOIN_PATTERN = re.compile(
+    r"\b(?:inner|left|right|full|cross)?\s*join\s+[\w\.\"]+(?:\s+\w+)?\s+on\s+.*?(?=\b(?:inner|left|right|full|cross)?\s*join\b|\bwhere\b|\bgroup\b|\border\b|\bhaving\b|;|$)",
+    re.IGNORECASE | re.DOTALL,
+)
+
+FILTER_PATTERNS = [
+    re.compile(r"\bwhere\s+.*?(?=\bgroup\b|\border\b|\bhaving\b|;|$)", re.IGNORECASE | re.DOTALL),
+    re.compile(r"\bhaving\s+.*?(?=\border\b|;|$)", re.IGNORECASE | re.DOTALL),
+]
+
 
 def detect_change_type(sql_text: str) -> str:
     if not sql_text.strip():
@@ -89,3 +119,38 @@ def basic_sql_sanity_checks(sql_text: str) -> list[str]:
         warnings.append("Parentheses appear unbalanced.")
 
     return warnings
+
+
+def extract_object_types(sql_text: str) -> list[str]:
+    found: list[str] = []
+    for pattern, object_type in OBJECT_TYPE_PATTERNS:
+        if pattern.search(sql_text):
+            found.append(object_type)
+
+    if DML_PATTERN.search(sql_text):
+        found.append("DML")
+
+    return sorted(set(found)) or ["UNKNOWN"]
+
+
+def extract_table_details(sql_text: str) -> list[str]:
+    found: list[str] = []
+    for pattern in TABLE_REFERENCE_PATTERNS:
+        for match in pattern.finditer(sql_text):
+            found.append(match.group(1).strip('"'))
+    return sorted(set(found))
+
+
+def extract_join_details(sql_text: str) -> list[str]:
+    return [_collapse_sql_whitespace(match.group(0)) for match in JOIN_PATTERN.finditer(sql_text)]
+
+
+def extract_filter_details(sql_text: str) -> list[str]:
+    found: list[str] = []
+    for pattern in FILTER_PATTERNS:
+        found.extend(_collapse_sql_whitespace(match.group(0)) for match in pattern.finditer(sql_text))
+    return found
+
+
+def _collapse_sql_whitespace(value: str) -> str:
+    return re.sub(r"\s+", " ", value).strip()

@@ -41,3 +41,15 @@ class PRFileDocPayload(BaseModel):
     affected_objects: list[str]
     suggested_doc_updates: list[str]
     rationale: str
+
+
+class PublishedSQLDocPayload(BaseModel):
+    filename: str
+    full_summary: str
+    sql_description: str
+    object_types: list[str]
+    table_details: list[str]
+    join_details: list[str]
+    filter_details: list[str]
+    affected_objects: list[str]
+    page_heading: str = ""

@@ -16,6 +16,7 @@ class ApprovalStateStore:
         head_sha: str,
         modified_files: list[str],
         new_files: list[str],
+        deleted_files: list[str],
         doc_payloads: list[dict[str, Any]],
     ) -> None:
         data = self._read_all()
@@ -29,6 +30,7 @@ class ApprovalStateStore:
             "head_sha": head_sha,
             "modified_files": modified_files,
             "new_files": new_files,
+            "deleted_files": deleted_files,
             "doc_payloads": doc_payloads,
             "approval": previous.get("approval", {"approved": False}),
             "publication": previous.get("publication", {"published": False}),
@@ -57,6 +59,7 @@ class ApprovalStateStore:
                 "head_sha": "",
                 "modified_files": [],
                 "new_files": [],
+                "deleted_files": [],
                 "doc_payloads": [],
                 "approval": {"approved": False},
                 "publication": {"published": False},
@@ -84,6 +87,7 @@ class ApprovalStateStore:
         message: str,
         page_id: str = "",
         title: str = "",
+        pages: list[dict[str, Any]] | None = None,
     ) -> None:
         data = self._read_all()
         key = self._key(owner, repo, pull_number)
@@ -96,6 +100,7 @@ class ApprovalStateStore:
             "message": message,
             "page_id": page_id,
             "title": title,
+            "pages": pages or [],
             "updated_at": self._now_iso(),
         }
         record["updated_at"] = self._now_iso()

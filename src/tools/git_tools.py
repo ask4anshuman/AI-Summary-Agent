@@ -1,6 +1,8 @@
 import difflib
+import base64
 from dataclasses import dataclass
 from typing import Any
+from urllib.parse import quote
 
 import requests
 
@@ -43,6 +45,13 @@ def _looks_like_sql_file(path: str) -> bool:
     return any(path_lower.endswith(ext) for ext in SQL_EXTENSIONS)
 
 
+def _normalize_github_file_status(status: str) -> str:
+    normalized = status.strip().lower()
+    if normalized == "removed":
+        return "deleted"
+    return normalized
+
+
 def extract_sql_patches_from_github_pr_files(pr_files_payload: list[dict[str, Any]]) -> list[str]:
     patches: list[str] = []
     for file_item in pr_files_payload:
@@ -65,7 +74,7 @@ def extract_sql_file_changes_from_github_pr_files(pr_files_payload: list[dict[st
         changes.append(
             GithubPRSQLFileChange(
                 filename=filename or previous_filename,
-                status=str(file_item.get("status", "")).lower(),
+                status=_normalize_github_file_status(str(file_item.get("status", ""))),
                 patch=str(file_item.get("patch", "")),
                 previous_filename=previous_filename,
             )
@@ -133,3 +142,77 @@ def fetch_bitbucket_pr_sql_patches(api_base_url: str, token: str, pr_url: str, t
         patches.append(f"# File: {path}\n{diff_resp.text}")
 
     return patches
+
+
+def fetch_github_file_content(
+    api_base_url: str,
+    token: str,
+    owner: str,
+    repo: str,
+    path: str,
+    ref: str = "",
+    timeout: int = 20,
+) -> str:
+    content, _ = fetch_github_file_content_with_sha(
+        api_base_url=api_base_url,
+        token=token,
+        owner=owner,
+        repo=repo,
+        path=path,
+        ref=ref,
+        timeout=timeout,
+    )
+    return content
+
+
+def fetch_github_file_content_with_sha(
+    api_base_url: str,
+    token: str,
+    owner: str,
+    repo: str,
+    path: str,
+    ref: str = "",
+    timeout: int = 20,
+) -> tuple[str, str]:
+    encoded_path = quote(path, safe="/")
+    url = f"{api_base_url.rstrip('/')}/repos/{owner}/{repo}/contents/{encoded_path}"
+    headers = {"Authorization": f"Bearer {token}", "Accept": "application/vnd.github+json"}
+    params = {"ref": ref} if ref else None
+    response = requests.get(url, headers=headers, params=params, timeout=timeout)
+    response.raise_for_status()
+    payload = response.json()
+    if not isinstance(payload, dict):
+        return "", ""
+
+    content = str(payload.get("content", ""))
+    encoding = str(payload.get("encoding", ""))
+    sha = str(payload.get("sha", ""))
+    if encoding == "base64" and content:
+        return base64.b64decode(content).decode("utf-8", errors="replace"), sha
+
+    return content, sha
+
+
+def update_github_file_content(
+    api_base_url: str,
+    token: str,
+    owner: str,
+    repo: str,
+    path: str,
+    content: str,
+    message: str,
+    branch: str,
+    sha: str,
+    timeout: int = 20,
+) -> None:
+    encoded_path = quote(path, safe="/")
+    url = f"{api_base_url.rstrip('/')}/repos/{owner}/{repo}/contents/{encoded_path}"
+    headers = {"Authorization": f"Bearer {token}", "Accept": "application/vnd.github+json"}
+    body = {
+        "message": message,
+        "content": base64.b64encode(content.encode("utf-8")).decode("ascii"),
+        "branch": branch,
+        "sha": sha,
+    }
+    response = requests.put(url, headers=headers, json=body, timeout=timeout)
+    response.raise_for_status()

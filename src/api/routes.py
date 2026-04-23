@@ -8,13 +8,30 @@ from fastapi import APIRouter, HTTPException, Request
 
 from src.agents.orchestrator import SQLDocumentationOrchestrator
 from src.config import settings
-from src.models import PRFileDocPayload, SummarizeRequest, SummarizeResponse, WebhookResponse
+from src.models import PRFileDocPayload, PublishedSQLDocPayload, SummarizeRequest, SummarizeResponse, WebhookResponse
 from src.tools.confluence_tools import ConfluencePublisher
-from src.tools.git_tools import GithubPRSQLFileChange, fetch_bitbucket_pr_sql_patches, fetch_github_pr_sql_file_changes
+from src.tools.git_tools import (
+    GithubPRSQLFileChange,
+    fetch_bitbucket_pr_sql_patches,
+    fetch_github_file_content,
+    fetch_github_file_content_with_sha,
+    fetch_github_pr_sql_file_changes,
+    update_github_file_content,
+)
+from src.tools.llm_tools import LLMClient, build_publish_doc_prompt
 from src.tools.approval_store import ApprovalStateStore
+from src.tools.sql_parser import (
+    detect_change_type,
+    extract_affected_objects,
+    extract_filter_details,
+    extract_join_details,
+    extract_object_types,
+    extract_table_details,
+)
 
 router = APIRouter()
 orchestrator = SQLDocumentationOrchestrator()
+publish_llm_client = LLMClient()
 approval_store = ApprovalStateStore(settings.approval_state_file)
 confluence_publisher = ConfluencePublisher(
     base_url=settings.confluence_base_url,
@@ -130,11 +147,20 @@ def _handle_github_pull_request_merge(payload: dict[str, Any], owner: str, repo:
             message="PR merged but analyzed SHA does not match final PR SHA; publish skipped",
         )
 
+    publish_record = _build_publish_record_from_merged_sql(payload=payload, owner=owner, repo=repo, record=record)
+
     publish_result = confluence_publisher.publish_pr_record(
         owner=owner,
         repo=repo,
         pull_number=pull_number,
+        record=publish_record,
+    )
+    _sync_confluence_links_into_sql_files(
+        payload=payload,
+        owner=owner,
+        repo=repo,
         record=record,
+        publication_pages=publish_result.get("pages", []),
     )
     approval_store.mark_publication(
         owner=owner,
@@ -144,7 +170,9 @@ def _handle_github_pull_request_merge(payload: dict[str, Any], owner: str, repo:
         message=str(publish_result.get("message", "")),
         page_id=str(publish_result.get("page_id", "")),
         title=str(publish_result.get("title", "")),
+        pages=publish_result.get("pages", []),
     )
+    _refresh_pr_comment_after_publication(owner=owner, repo=repo, pull_number=pull_number)
     return WebhookResponse(ok=True, message=str(publish_result.get("message", "Confluence publish attempted")))
 
 
@@ -274,6 +302,15 @@ def _list_github_pr_comments(owner: str, repo: str, pull_number: int) -> list[di
     return payload if isinstance(payload, list) else []
 
 
+def _get_existing_sticky_pr_comment(owner: str, repo: str, pull_number: int) -> str:
+    comments = _list_github_pr_comments(owner=owner, repo=repo, pull_number=pull_number)
+    for comment in comments:
+        body = str(comment.get("body", ""))
+        if STICKY_PR_COMMENT_MARKER in body:
+            return body
+    return ""
+
+
 def _update_github_comment(owner: str, repo: str, comment_id: int, markdown: str) -> None:
     if not (settings.github_api_base_url and settings.github_token) or comment_id <= 0:
         return
@@ -290,6 +327,7 @@ def _update_github_comment(owner: str, repo: str, comment_id: int, markdown: str
 def _build_github_pr_summary_comment(sql_changes: list[GithubPRSQLFileChange]) -> tuple[str, list[dict[str, Any]]]:
     modified_changes = [change for change in sql_changes if change.status in {"modified", "renamed"}]
     added_changes = [change for change in sql_changes if change.status == "added"]
+    deleted_changes = [change for change in sql_changes if change.status in {"deleted", "removed"}]
     doc_payloads: list[dict[str, Any]] = []
 
     sections: list[str] = [STICKY_PR_COMMENT_MARKER, "## SQL PR Summary"]
@@ -308,10 +346,112 @@ def _build_github_pr_summary_comment(sql_changes: list[GithubPRSQLFileChange]) -
                 f"- **{change.filename}**: New SQL file detected. Documentation will be published after PR merge."
             )
 
+    if deleted_changes:
+        sections.append("### Deleted SQL Files")
+        for change in deleted_changes:
+            existing_page = confluence_publisher.find_page_for_filename(change.filename) if confluence_publisher.enabled else None
+            page_url = str(existing_page.get("url", "")) if existing_page else ""
+            if page_url:
+                sections.append(
+                    f"- **{change.filename}**: This SQL file is being deleted in this PR. [Confluence]({page_url}) (Deleted or moved will be added after Published.)"
+                )
+            else:
+                sections.append(
+                    f"- **{change.filename}**: This SQL file is being deleted in this PR. Existing documentation will be marked as Code moved or deleted after PR merge. (Deleted or moved will be added after Published.)"
+                )
+
+    status_lines = _build_pr_file_status_lines(sql_changes)
+    if status_lines:
+        sections.append("### Documentation Status")
+        sections.extend(status_lines)
+
     if len(sections) == 2:
         return "", doc_payloads
 
     return "\n".join(sections), doc_payloads
+
+
+def _build_pr_file_status_lines(sql_changes: list[GithubPRSQLFileChange], publication_pages: list[dict[str, Any]] | None = None) -> list[str]:
+    publication_pages = publication_pages or []
+    published_by_filename = {
+        str(page.get("filename", "")): page for page in publication_pages if str(page.get("filename", ""))
+    }
+
+    lines: list[str] = []
+    for change in sql_changes:
+        published_page = published_by_filename.get(change.filename)
+        if published_page:
+            lines.append(_format_status_line(change.filename, "Published", str(published_page.get("url", ""))))
+            continue
+
+        if change.status in {"deleted", "removed"}:
+            existing_page = confluence_publisher.find_page_for_filename(change.filename) if confluence_publisher.enabled else None
+            if existing_page and existing_page.get("url"):
+                lines.append(_format_status_line(change.filename, "Will mark as Code moved or deleted after merge", existing_page["url"]))
+            else:
+                lines.append(_format_status_line(change.filename, "Will mark as Code moved or deleted after merge"))
+            continue
+
+        existing_page = confluence_publisher.find_page_for_filename(change.filename) if confluence_publisher.enabled else None
+        if existing_page and existing_page.get("url"):
+            lines.append(_format_status_line(change.filename, "Publish after merged", existing_page["url"]))
+        else:
+            lines.append(_format_status_line(change.filename, "Publish after merged"))
+
+    return lines
+
+
+def _format_status_line(filename: str, status: str, url: str = "") -> str:
+    if url:
+        return f"- **{filename}**: {status} - [Confluence]({url})"
+    return f"- **{filename}**: {status}"
+
+
+def _replace_documentation_status_section(markdown: str, status_lines: list[str]) -> str:
+    if not status_lines:
+        return markdown.strip()
+
+    status_section = "\n".join(["### Documentation Status", *status_lines])
+    stripped_markdown = markdown.strip()
+    if not stripped_markdown:
+        return "\n".join([STICKY_PR_COMMENT_MARKER, "## SQL PR Summary", status_section])
+
+    marker = "\n### Documentation Status\n"
+    if marker in stripped_markdown:
+        prefix, _ = stripped_markdown.split(marker, 1)
+        return "\n".join([prefix.rstrip(), status_section])
+
+    return "\n\n".join([stripped_markdown, status_section])
+
+
+def _refresh_pr_comment_after_publication(owner: str, repo: str, pull_number: int) -> None:
+    record = approval_store.get_pr_record(owner=owner, repo=repo, pull_number=pull_number)
+    if not record:
+        return
+
+    sql_changes = [
+        GithubPRSQLFileChange(filename=path, status="modified", patch="")
+        for path in record.get("modified_files", [])
+    ] + [
+        GithubPRSQLFileChange(filename=path, status="added", patch="")
+        for path in record.get("new_files", [])
+    ] + [
+        GithubPRSQLFileChange(filename=path, status="deleted", patch="")
+        for path in record.get("deleted_files", [])
+    ]
+    if not sql_changes:
+        return
+
+    publication_pages = record.get("publication", {}).get("pages", [])
+    status_lines = _build_pr_file_status_lines(sql_changes, publication_pages=publication_pages)
+    existing_comment_markdown = _get_existing_sticky_pr_comment(owner=owner, repo=repo, pull_number=pull_number)
+    if existing_comment_markdown:
+        comment_markdown = _replace_documentation_status_section(existing_comment_markdown, status_lines)
+    else:
+        comment_markdown, _ = _build_github_pr_summary_comment(sql_changes)
+        comment_markdown = _replace_documentation_status_section(comment_markdown, status_lines)
+
+    _upsert_github_pr_comment(owner=owner, repo=repo, pull_number=pull_number, markdown=comment_markdown)
 
 
 def _summarize_github_sql_change(change: GithubPRSQLFileChange) -> tuple[str, PRFileDocPayload]:
@@ -353,6 +493,218 @@ def _to_pr_safe_summary(summary: str, max_len: int | None = None) -> str:
     return f"{cleaned[: max_chars - 3].rstrip()}..."
 
 
+def _build_publish_record_from_merged_sql(payload: dict[str, Any], owner: str, repo: str, record: dict[str, Any]) -> dict[str, Any]:
+    if not (settings.github_api_base_url and settings.github_token):
+        return record
+
+    pull_request = payload.get("pull_request", {})
+    ref = str(pull_request.get("merge_commit_sha", "")).strip() or str(pull_request.get("base", {}).get("ref", "")).strip()
+    final_paths = sorted(set([*record.get("modified_files", []), *record.get("new_files", [])]))
+    deleted_paths = sorted(set(record.get("deleted_files", [])))
+    if not final_paths and not deleted_paths:
+        return record
+
+    publish_payloads: list[dict[str, Any]] = []
+    for path in final_paths:
+        try:
+            sql_text = fetch_github_file_content(
+                api_base_url=settings.github_api_base_url,
+                token=settings.github_token,
+                owner=owner,
+                repo=repo,
+                path=path,
+                ref=ref,
+            )
+        except requests.RequestException:
+            continue
+
+        if not sql_text.strip():
+            continue
+
+        publish_payloads.append(_generate_publish_sql_doc(path, sql_text).model_dump())
+
+    for path in deleted_paths:
+        publish_payloads.append(_generate_deleted_sql_doc(path).model_dump())
+
+    if not publish_payloads:
+        return record
+
+    updated_record = dict(record)
+    updated_record["doc_payloads"] = publish_payloads
+    return updated_record
+
+
+def _sync_confluence_links_into_sql_files(
+    payload: dict[str, Any],
+    owner: str,
+    repo: str,
+    record: dict[str, Any],
+    publication_pages: list[dict[str, Any]],
+) -> None:
+    if not (settings.github_api_base_url and settings.github_token):
+        return
+
+    pull_request = payload.get("pull_request", {})
+    base_ref = str(pull_request.get("base", {}).get("ref", "")).strip()
+    if not base_ref:
+        return
+
+    file_paths = sorted(set([*record.get("modified_files", []), *record.get("new_files", [])]))
+    if not file_paths:
+        return
+
+    page_by_filename = {
+        str(page.get("filename", "")): str(page.get("url", ""))
+        for page in publication_pages
+        if str(page.get("filename", "")) and str(page.get("url", ""))
+    }
+
+    for path in file_paths:
+        page_url = page_by_filename.get(path, "")
+        if not page_url and confluence_publisher.enabled:
+            existing_page = confluence_publisher.find_page_for_filename(path)
+            page_url = str(existing_page.get("url", "")) if existing_page else ""
+
+        if not page_url:
+            continue
+
+        try:
+            current_sql, current_sha = fetch_github_file_content_with_sha(
+                api_base_url=settings.github_api_base_url,
+                token=settings.github_token,
+                owner=owner,
+                repo=repo,
+                path=path,
+                ref=base_ref,
+            )
+        except requests.RequestException:
+            continue
+
+        if not current_sql.strip() or not current_sha:
+            continue
+
+        updated_sql = _ensure_confluence_link_at_fourth_line(current_sql, page_url)
+        if updated_sql == current_sql:
+            continue
+
+        try:
+            update_github_file_content(
+                api_base_url=settings.github_api_base_url,
+                token=settings.github_token,
+                owner=owner,
+                repo=repo,
+                path=path,
+                content=updated_sql,
+                message=f"chore(sql-doc): add confluence link to {path}",
+                branch=base_ref,
+                sha=current_sha,
+            )
+        except requests.RequestException:
+            continue
+
+
+def _ensure_confluence_link_at_fourth_line(sql_text: str, confluence_url: str) -> str:
+    newline = "\r\n" if "\r\n" in sql_text else "\n"
+    trailing_newline = sql_text.endswith("\n") or sql_text.endswith("\r")
+    lines = sql_text.splitlines()
+    confluence_line = f"-- Confluence: {confluence_url}"
+
+    while len(lines) < 3:
+        lines.append("")
+
+    if len(lines) >= 4 and lines[3].strip().lower().startswith("-- confluence:"):
+        lines[3] = confluence_line
+    elif len(lines) >= 4 and lines[3].strip() == confluence_line:
+        pass
+    else:
+        lines.insert(3, confluence_line)
+
+    rebuilt = newline.join(lines)
+    if trailing_newline and not rebuilt.endswith(newline):
+        rebuilt += newline
+    return rebuilt
+
+
+def _generate_publish_sql_doc(filename: str, sql_text: str) -> PublishedSQLDocPayload:
+    change_type = detect_change_type(sql_text)
+    affected_objects = extract_affected_objects(sql_text)
+    object_types = extract_object_types(sql_text)
+    table_details = extract_table_details(sql_text)
+    join_details = extract_join_details(sql_text)
+    filter_details = extract_filter_details(sql_text)
+
+    fallback = {
+        "full_summary": _build_publish_summary_fallback(change_type, table_details, join_details, filter_details),
+        "sql_description": _build_publish_description_fallback(object_types, table_details, join_details, filter_details, affected_objects),
+        "object_types": object_types,
+        "table_details": table_details,
+        "join_details": join_details,
+        "filter_details": filter_details,
+        "affected_objects": affected_objects,
+    }
+
+    response = publish_llm_client.request_json(
+        prompt=build_publish_doc_prompt(sql_text=sql_text, change_type=change_type, affected_objects=affected_objects),
+        fallback=fallback,
+    )
+
+    return PublishedSQLDocPayload(
+        filename=filename,
+        full_summary=str(response.get("full_summary", fallback["full_summary"])),
+        sql_description=str(response.get("sql_description", fallback["sql_description"])),
+        object_types=[str(item) for item in response.get("object_types", object_types)],
+        table_details=[str(item) for item in response.get("table_details", table_details)],
+        join_details=[str(item) for item in response.get("join_details", join_details)],
+        filter_details=[str(item) for item in response.get("filter_details", filter_details)],
+        affected_objects=[str(item) for item in response.get("affected_objects", affected_objects)],
+        page_heading=str(response.get("page_heading", "")),
+    )
+
+
+def _generate_deleted_sql_doc(filename: str) -> PublishedSQLDocPayload:
+    return PublishedSQLDocPayload(
+        filename=filename,
+        full_summary="This SQL file was removed from the repository by an approved pull request. The documentation page is retained for traceability.",
+        sql_description="Code moved or deleted.",
+        object_types=[],
+        table_details=[],
+        join_details=[],
+        filter_details=[],
+        affected_objects=[],
+        page_heading="Code moved or deleted",
+    )
+
+
+def _build_publish_summary_fallback(
+    change_type: str,
+    table_details: list[str],
+    join_details: list[str],
+    filter_details: list[str],
+) -> str:
+    tables = ", ".join(table_details[:5]) if table_details else "no clearly parsed tables"
+    joins = f" It uses {len(join_details)} join clause(s)." if join_details else ""
+    filters = f" It applies {len(filter_details)} filter clause(s)." if filter_details else ""
+    return f"This final merged SQL file is classified as {change_type} and works with {tables}.{joins}{filters}".strip()
+
+
+def _build_publish_description_fallback(
+    object_types: list[str],
+    table_details: list[str],
+    join_details: list[str],
+    filter_details: list[str],
+    affected_objects: list[str],
+) -> str:
+    type_text = ", ".join(object_types) if object_types else "UNKNOWN"
+    table_text = ", ".join(table_details[:8]) if table_details else "No table references detected"
+    join_text = "; ".join(join_details[:5]) if join_details else "No explicit joins detected"
+    filter_text = "; ".join(filter_details[:5]) if filter_details else "No explicit filters detected"
+    object_text = ", ".join(affected_objects[:8]) if affected_objects else "No affected objects detected"
+    return (
+        f"Object types: {type_text}. Tables or primary objects: {table_text}. "
+        f"Join details: {join_text}. Filter details: {filter_text}. Affected objects: {object_text}."
+    )
+
+
 def _store_pr_analysis(
     payload: dict[str, Any],
     owner: str,
@@ -365,6 +717,7 @@ def _store_pr_analysis(
     head_sha = str(pull_request.get("head", {}).get("sha", ""))
     modified_files = [change.filename for change in sql_changes if change.status in {"modified", "renamed"}]
     new_files = [change.filename for change in sql_changes if change.status == "added"]
+    deleted_files = [change.filename for change in sql_changes if change.status in {"deleted", "removed"}]
     approval_store.upsert_pr_analysis(
         owner=owner,
         repo=repo,
@@ -372,6 +725,7 @@ def _store_pr_analysis(
         head_sha=head_sha,
         modified_files=modified_files,
         new_files=new_files,
+        deleted_files=deleted_files,
         doc_payloads=doc_payloads,
     )
 

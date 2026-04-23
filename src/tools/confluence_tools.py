@@ -22,79 +22,110 @@ class ConfluencePublisher:
     def enabled(self) -> bool:
         return bool(self.base_url and self.space_key and self.username and self.api_token)
 
+    def find_page_for_filename(self, filename: str) -> dict[str, str] | None:
+        title = self._build_file_page_title(repo="", pull_number=0, payload={"filename": filename})
+        page = self._find_page_by_title(title)
+        if page is None:
+            return None
+
+        page_id = str(page.get("id", ""))
+        return {
+            "filename": filename,
+            "title": title,
+            "page_id": page_id,
+            "url": self._build_page_url(page_id),
+        }
+
     def publish_pr_record(self, owner: str, repo: str, pull_number: int, record: dict[str, Any]) -> dict[str, Any]:
         if not self.enabled:
             return {"ok": False, "message": "Confluence publisher not configured"}
 
-        title = f"{repo} PR-{pull_number} SQL Summary"
-        body = self._build_page_body(owner=owner, repo=repo, pull_number=pull_number, record=record)
+        doc_payloads = record.get("doc_payloads", [])
+        if not doc_payloads:
+            return {"ok": False, "message": "No SQL documentation payload was captured"}
 
-        existing = self._find_page_by_title(title)
-        if existing is None:
-            created = self._create_page(title=title, body=body)
-            if not created:
-                return {"ok": False, "message": "Failed to create Confluence page"}
-            return {
-                "ok": True,
-                "message": "Confluence page created",
-                "page_id": str(created.get("id", "")),
+        published_pages: list[dict[str, str]] = []
+        for payload in doc_payloads:
+            title = self._build_file_page_title(repo=repo, pull_number=pull_number, payload=payload)
+            body = self._build_file_page_body(payload=payload)
+
+            existing = self._find_page_by_title(title)
+            if existing is None:
+                created = self._create_page(title=title, body=body)
+                if not created:
+                    return {"ok": False, "message": f"Failed to create Confluence page for {title}"}
+                page_id = str(created.get("id", ""))
+                published_pages.append({
+                    "filename": str(payload.get("filename", "unknown.sql")),
+                    "page_id": page_id,
+                    "title": title,
+                    "url": self._build_page_url(page_id),
+                })
+                continue
+
+            updated = self._update_page(page=existing, title=title, body=body)
+            if not updated:
+                return {"ok": False, "message": f"Failed to update Confluence page for {title}"}
+            page_id = str(existing.get("id", ""))
+            published_pages.append({
+                "filename": str(payload.get("filename", "unknown.sql")),
+                "page_id": page_id,
                 "title": title,
-            }
+                "url": self._build_page_url(page_id),
+            })
 
-        updated = self._update_page(page=existing, title=title, body=body)
-        if not updated:
-            return {"ok": False, "message": "Failed to update Confluence page"}
-
+        primary = published_pages[0] if published_pages else {"page_id": "", "title": ""}
         return {
             "ok": True,
-            "message": "Confluence page updated",
-            "page_id": str(existing.get("id", "")),
-            "title": title,
+            "message": f"Confluence pages published: {len(published_pages)}",
+            "page_id": primary["page_id"],
+            "title": primary["title"],
+            "pages": published_pages,
         }
 
-    def _build_page_body(self, owner: str, repo: str, pull_number: int, record: dict[str, Any]) -> str:
-        approval = record.get("approval", {})
-        modified_files = record.get("modified_files", [])
-        new_files = record.get("new_files", [])
-        doc_payloads = record.get("doc_payloads", [])
+    def _build_file_page_title(self, repo: str, pull_number: int, payload: dict[str, Any]) -> str:
+        filename = str(payload.get("filename", "unknown.sql"))
+        base_name = filename.split("/")[-1].split("\\")[-1]
+        return f"Technical Summary for - {base_name}"
 
-        sections: list[str] = [
-            f"<h2>PR Context</h2>",
-            f"<p><strong>Repository:</strong> {owner}/{repo}</p>",
-            f"<p><strong>PR Number:</strong> {pull_number}</p>",
-            f"<p><strong>Head SHA:</strong> {record.get('head_sha', '')}</p>",
-            f"<p><strong>Approved:</strong> {approval.get('approved', False)}</p>",
-            f"<p><strong>Approval Source:</strong> {approval.get('source', '')}</p>",
-            f"<p><strong>Approval Actor:</strong> {approval.get('actor', '')}</p>",
-            "<h2>Modified SQL Files</h2>",
-            self._to_html_list([str(item) for item in modified_files]) or "<p>None</p>",
-            "<h2>New SQL Files</h2>",
-            self._to_html_list([str(item) for item in new_files]) or "<p>None</p>",
-            "<h2>SQL Change Documentation</h2>",
-        ]
+    def _build_page_url(self, page_id: str) -> str:
+        if not page_id:
+            return ""
+        return f"{self.base_url}/pages/viewpage.action?pageId={page_id}"
 
-        if not doc_payloads:
-            sections.append("<p>No SQL documentation payload was captured.</p>")
-            return "\n".join(sections)
+    def _build_file_page_body(self, payload: dict[str, Any]) -> str:
+        page_heading = str(payload.get("page_heading", "")).strip()
+        full_summary = str(payload.get("full_summary", "")).strip() or "No summary generated."
+        sql_description = str(payload.get("sql_description", "")).strip() or "No SQL description generated."
+        object_types = [str(item) for item in payload.get("object_types", [])]
+        table_details = [str(item) for item in payload.get("table_details", [])]
+        join_details = [str(item) for item in payload.get("join_details", [])]
+        filter_details = [str(item) for item in payload.get("filter_details", [])]
+        affected_objects = [str(item) for item in payload.get("affected_objects", [])]
 
-        for payload in doc_payloads:
-            filename = str(payload.get("filename", "unknown.sql"))
-            summary = str(payload.get("summary", ""))
-            change_type = str(payload.get("change_type", "UNKNOWN"))
-            impact_level = str(payload.get("impact_level", "medium"))
-            rationale = str(payload.get("rationale", ""))
-            affected_objects = [str(item) for item in payload.get("affected_objects", [])]
-            suggested_doc_updates = [str(item) for item in payload.get("suggested_doc_updates", [])]
+        sections: list[str] = []
+        if page_heading:
+            sections.extend([f"<h1>{page_heading}</h1>", f"<p>{sql_description}</p>"])
 
-            sections.append(f"<h3>{filename}</h3>")
-            sections.append(f"<p><strong>Summary:</strong> {summary}</p>")
-            sections.append(f"<p><strong>Change Type:</strong> {change_type}</p>")
-            sections.append(f"<p><strong>Impact Level:</strong> {impact_level}</p>")
-            sections.append(f"<p><strong>Rationale:</strong> {rationale}</p>")
-            sections.append("<p><strong>Affected Objects:</strong></p>")
-            sections.append(self._to_html_list(affected_objects) or "<p>None</p>")
-            sections.append("<p><strong>Suggested Documentation Updates:</strong></p>")
-            sections.append(self._to_html_list(suggested_doc_updates) or "<p>None</p>")
+        sections.extend(
+            [
+                "<h2>Full Summary</h2>",
+                f"<p>{full_summary}</p>",
+                "<h2>SQL Description</h2>",
+                f"<p>{sql_description}</p>",
+            ]
+        )
+
+        if object_types:
+            sections.extend(["<h2>Object Types</h2>", self._to_html_list(object_types)])
+        if table_details:
+            sections.extend(["<h2>Table Details</h2>", self._to_html_list(table_details)])
+        if join_details:
+            sections.extend(["<h2>Join Details</h2>", self._to_html_list(join_details)])
+        if filter_details:
+            sections.extend(["<h2>Filter Details</h2>", self._to_html_list(filter_details)])
+        if affected_objects:
+            sections.extend(["<h2>Affected Objects</h2>", self._to_html_list(affected_objects)])
 
         return "\n".join(sections)
 

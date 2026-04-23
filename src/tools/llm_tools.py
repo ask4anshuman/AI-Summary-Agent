@@ -96,3 +96,27 @@ def build_doc_prompt(sql_diff: str, summary: str) -> str:
         {sql_diff}
         """
     ).strip()
+
+
+def build_publish_doc_prompt(sql_text: str, change_type: str, affected_objects: list[str]) -> str:
+    return dedent(
+        f"""
+        Analyze this final merged SQL/PLSQL file and return JSON only with keys:
+        full_summary, sql_description, object_types, table_details, join_details, filter_details, affected_objects
+
+        Rules:
+        - full_summary: 1-2 detailed paragraphs explaining the complete purpose and behavior of the SQL file
+        - sql_description: detailed technical explanation covering objects, joins, filters, and business effect
+        - object_types: array of object type labels such as TABLE, FUNCTION, PROCEDURE, TRIGGER, VIEW, DML
+        - table_details: array of tables or primary objects referenced in the SQL file
+        - join_details: array of notable joins with conditions when present
+        - filter_details: array of WHERE/HAVING filters or other important filtering rules
+        - affected_objects: array of impacted database objects
+
+        Detected change type: {change_type}
+        Detected affected objects: {", ".join(affected_objects) if affected_objects else "None detected"}
+
+        Final SQL File Content:
+        {sql_text}
+        """
+    ).strip()
