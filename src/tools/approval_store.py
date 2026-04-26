@@ -1,7 +1,8 @@
 # Purpose : Persistent store for PR approval and publication state.
 #           Tracks each PR's analysis payload, approval status, and Confluence publish result
 #           in a local JSON file. Keys are namespaced as owner/repo#PR so multiple repos
-#           share one file safely. Records older than 10 days are pruned automatically.
+#           share one file safely. Completed (published) records older than 10 days are
+#           pruned automatically; open/in-progress PR records are retained.
 # Called by: src/api/routes.py (upsert on PR open/sync, mark_approval on comment/label/review,
 #            mark_publication after Confluence publish).
 
@@ -139,12 +140,18 @@ class ApprovalStateStore:
         return payload
 
     def _prune(self, payload: dict[str, Any]) -> None:
-        """Remove records whose created_at is older than _RETENTION_DAYS."""
+        """Remove published records older than _RETENTION_DAYS.
+
+        Open/in-progress PR records are intentionally retained, even if older than
+        retention, to avoid losing long-running PR state.
+        """
         cutoff = datetime.now(timezone.utc) - timedelta(days=_RETENTION_DAYS)
         prs = payload.get("prs", {})
         to_delete = [
             k for k, v in prs.items()
-            if isinstance(v, dict) and self._parse_iso(v.get("created_at", "")) < cutoff
+            if isinstance(v, dict)
+            and self._is_published(v)
+            and self._parse_iso(v.get("updated_at", "")) < cutoff
         ]
         for k in to_delete:
             del prs[k]
@@ -168,3 +175,8 @@ class ApprovalStateStore:
             return datetime.fromisoformat(value)
         except (ValueError, TypeError):
             return datetime.min.replace(tzinfo=timezone.utc)
+
+    @staticmethod
+    def _is_published(record: dict[str, Any]) -> bool:
+        publication = record.get("publication")
+        return isinstance(publication, dict) and bool(publication.get("published", False))
