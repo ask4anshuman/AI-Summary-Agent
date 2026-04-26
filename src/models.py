@@ -93,10 +93,19 @@ class RepoConfluenceConfig(BaseModel):
     path_mappings: list[RepoPathMapping] = Field(default_factory=list)
 
 
+class RepoPromptSet(BaseModel):
+    """Custom prompt set definition. Contains system and user templates for 4 LLM operations."""
+    summary: dict[str, str] = Field(default_factory=lambda: {"system": "", "user": ""})
+    doc_suggestion: dict[str, str] = Field(default_factory=lambda: {"system": "", "user": ""})
+    pr_comment: dict[str, str] = Field(default_factory=lambda: {"system": "", "user": ""})
+    publish: dict[str, str] = Field(default_factory=lambda: {"system": "", "user": ""})
+
+
 class RepoRegistrationRequest(BaseModel):
     github: RepoGithubConfig
     llm: RepoLlmConfig = Field(default_factory=RepoLlmConfig)
     confluence: RepoConfluenceConfig
+    prompts: dict[str, RepoPromptSet] | None = Field(default=None, description="Custom prompt sets (optional). Key is prompt_set name, value is RepoPromptSet.")
 
 
 class RepoRegistrationResponse(BaseModel):

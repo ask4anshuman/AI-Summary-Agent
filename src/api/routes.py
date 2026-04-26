@@ -63,6 +63,8 @@ STICKY_PR_COMMENT_MARKER = "<!-- ai-sql-summary-agent:sticky-pr-summary -->"
 
 @dataclass(frozen=True)
 class RuntimeConfig:
+    repo_identifier: str  # owner/repo for prompt resolution
+    repo_prompts: dict[str, Any]  # Custom prompts for this repo
     github_api_base_url: str
     github_token: str
     github_webhook_secret: str
@@ -79,6 +81,8 @@ class RuntimeConfig:
 
 def _default_runtime_config() -> RuntimeConfig:
     return RuntimeConfig(
+        repo_identifier="",
+        repo_prompts={},
         github_api_base_url=settings.github_api_base_url,
         github_token=settings.github_token,
         github_webhook_secret=settings.github_webhook_secret,
@@ -101,6 +105,7 @@ def _build_runtime_llm_client(runtime: RuntimeConfig) -> LLMClient:
         model=runtime.llm_model,
         temperature=runtime.llm_temperature,
         prompt_set=runtime.llm_prompt_set,
+        repo_prompts=runtime.repo_prompts,
     )
 
 
@@ -129,6 +134,7 @@ def _build_runtime_config(payload: dict[str, Any]) -> RuntimeConfig:
     github_cfg = repo_config.get("github", {}) if isinstance(repo_config.get("github", {}), dict) else {}
     llm_cfg = repo_config.get("llm", {}) if isinstance(repo_config.get("llm", {}), dict) else {}
     confluence_cfg = repo_config.get("confluence", {}) if isinstance(repo_config.get("confluence", {}), dict) else {}
+    repo_prompts_cfg = repo_config.get("prompts", {}) if isinstance(repo_config.get("prompts", {}), dict) else {}
 
     confluence_runtime = ConfluencePublisher(
         base_url=str(confluence_cfg.get("base_url", runtime.confluence.base_url)).strip(),
@@ -140,6 +146,8 @@ def _build_runtime_config(payload: dict[str, Any]) -> RuntimeConfig:
     )
 
     return RuntimeConfig(
+        repo_identifier=full_name,
+        repo_prompts=repo_prompts_cfg,
         github_api_base_url=str(github_cfg.get("api_base_url", runtime.github_api_base_url)).strip(),
         github_token=str(github_cfg.get("token", runtime.github_token)).strip(),
         github_webhook_secret=str(github_cfg.get("webhook_secret", runtime.github_webhook_secret)).strip(),
@@ -189,6 +197,11 @@ def register_repo(request: RepoRegistrationRequest) -> RepoRegistrationResponse:
             "path_mappings": [item.model_dump() for item in request.confluence.path_mappings],
         },
     }
+    
+    # Store custom prompts if provided
+    if request.prompts:
+        record["prompts"] = {key: val.model_dump() for key, val in request.prompts.items()}
+    
     repo_registry.upsert_repo(full_name, record)
     return RepoRegistrationResponse(ok=True, message="Repository registered", repo=full_name)
 
@@ -221,6 +234,47 @@ def delete_repo_registration(owner: str, repo: str) -> dict[str, Any]:
     if not deleted:
         raise HTTPException(status_code=404, detail="Repository registration not found")
     return {"ok": True, "message": "Repository registration deleted", "repo": full_name}
+
+
+@router.put("/repos/{owner}/{repo}/prompts")
+def update_repo_prompts(owner: str, repo: str, request: dict[str, Any]) -> dict[str, Any]:
+    """Update or replace custom prompt sets for a repository.
+    
+    Endpoint: PUT /repos/{owner}/{repo}/prompts
+    
+    Request body: JSON object where keys are prompt_set names and values are 
+    RepoPromptSet objects (with summary, doc_suggestion, pr_comment, publish keys).
+    
+    Example:
+    {
+      "analytics-custom": {
+        "summary": {"system": "...", "user": "..."},
+        "doc_suggestion": {"system": "...", "user": "..."},
+        "pr_comment": {"system": "...", "user": "..."},
+        "publish": {"system": "...", "user": "..."}
+      }
+    }
+    """
+    full_name = f"{owner}/{repo}".lower()
+    record = repo_registry.get_repo(full_name)
+    if not record:
+        raise HTTPException(status_code=404, detail="Repository registration not found")
+    
+    # Initialize prompts dict if not exists
+    if "prompts" not in record:
+        record["prompts"] = {}
+    
+    # Merge new prompts into existing
+    if isinstance(request, dict):
+        record["prompts"].update(request)
+    
+    repo_registry.upsert_repo(full_name, record)
+    return {
+        "ok": True,
+        "message": "Repository prompts updated",
+        "repo": full_name,
+        "prompts": record.get("prompts", {}),
+    }
 
 
 @router.post("/summarize", response_model=SummarizeResponse)

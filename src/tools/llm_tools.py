@@ -68,13 +68,14 @@ class LLMClient:
         temperature: float | None = None,
         prompt_set: str = "",
         prompt_store: PromptStore | None = None,
+        repo_prompts: dict[str, Any] | None = None,
     ) -> None:
         self.api_key = (api_key or settings.openai_api_key).strip()
         self.base_url = _normalize_openai_base_url(base_url or settings.openai_base_url)
         self.model = (model or settings.openai_model).strip()
         self.temperature = settings.openai_temperature if temperature is None else float(temperature)
         self.prompt_set = (prompt_set or settings.openai_prompt_set or "default").strip()
-        self.prompt_store = prompt_store or PromptStore()
+        self.prompt_store = prompt_store or PromptStore(repo_prompts=repo_prompts or {})
 
         if not self.api_key:
             raise LLMConfigurationError("LLM API key is required. Configure llm.api_key (or OPENAI_API_KEY).")
