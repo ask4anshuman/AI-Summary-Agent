@@ -1,3 +1,10 @@
+# Purpose : Rule-based SQL analysis utilities. Detects change type (DDL/DML/PL-SQL),
+#           extracts affected object names, estimates impact level, parses unified diffs,
+#           and runs basic SQL sanity checks.
+#           Used as the fallback analysis layer when the LLM is unavailable.
+# Called by: src/agents/sql_summarizer.py, src/agents/orchestrator.py,
+#            tests/test_sql_parser.py.
+
 import re
 from collections import Counter
 

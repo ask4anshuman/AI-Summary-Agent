@@ -1,3 +1,11 @@
+# Purpose : All HTTP route handlers for the FastAPI application.
+#           Handles: /health, /summarize, /github-webhook, /repos/* (CRUD registration).
+#           On GitHub webhook events it validates HMAC signatures, resolves per-repo runtime config,
+#           processes PR open/sync/merge events, posts PR comments, tracks approval state,
+#           publishes SQL documentation to Confluence, and injects Confluence links into SQL files.
+# Called by: src/main.py (router registered on app startup).
+#            tests/test_webhooks_no_sql.py, tests/test_health.py, tests/test_summarize.py.
+
 import hashlib
 import hmac
 import json
@@ -29,7 +37,7 @@ from src.tools.git_tools import (
     fetch_github_pr_sql_file_changes,
     update_github_file_content,
 )
-from src.tools.llm_tools import LLMClient, build_publish_doc_prompt
+from src.tools.llm_tools import LLMClient
 from src.tools.approval_store import ApprovalStateStore
 from src.tools.sql_parser import (
     detect_change_type,
@@ -41,8 +49,6 @@ from src.tools.sql_parser import (
 )
 
 router = APIRouter()
-orchestrator = SQLDocumentationOrchestrator()
-publish_llm_client = LLMClient()
 approval_store = ApprovalStateStore(settings.approval_state_file)
 repo_registry = RepoRegistryStore(settings.repo_registry_file)
 confluence_publisher = ConfluencePublisher(
@@ -62,6 +68,12 @@ class RuntimeConfig:
     github_webhook_secret: str
     github_approval_command: str
     github_approval_label: str
+    llm_api_key: str
+    llm_base_url: str
+    llm_model: str
+    llm_temperature: float
+    llm_prompt_set: str
+    llm_pr_summary_max_chars: int
     confluence: ConfluencePublisher
 
 
@@ -72,8 +84,35 @@ def _default_runtime_config() -> RuntimeConfig:
         github_webhook_secret=settings.github_webhook_secret,
         github_approval_command=settings.github_approval_command,
         github_approval_label=settings.github_approval_label,
+        llm_api_key=settings.openai_api_key,
+        llm_base_url=settings.openai_base_url,
+        llm_model=settings.openai_model,
+        llm_temperature=settings.openai_temperature,
+        llm_prompt_set=settings.openai_prompt_set,
+        llm_pr_summary_max_chars=settings.pr_summary_max_chars,
         confluence=confluence_publisher,
     )
+
+
+def _build_runtime_llm_client(runtime: RuntimeConfig) -> LLMClient:
+    return LLMClient(
+        api_key=runtime.llm_api_key,
+        base_url=runtime.llm_base_url,
+        model=runtime.llm_model,
+        temperature=runtime.llm_temperature,
+        prompt_set=runtime.llm_prompt_set,
+    )
+
+
+def _run_orchestrator(
+    *,
+    runtime: RuntimeConfig,
+    previous_sql: str = "",
+    current_sql: str = "",
+    diff: str = "",
+):
+    orchestrator = SQLDocumentationOrchestrator(llm_client=_build_runtime_llm_client(runtime))
+    return orchestrator.run(previous_sql=previous_sql, current_sql=current_sql, diff=diff)
 
 
 def _build_runtime_config(payload: dict[str, Any]) -> RuntimeConfig:
@@ -88,6 +127,7 @@ def _build_runtime_config(payload: dict[str, Any]) -> RuntimeConfig:
         return runtime
 
     github_cfg = repo_config.get("github", {}) if isinstance(repo_config.get("github", {}), dict) else {}
+    llm_cfg = repo_config.get("llm", {}) if isinstance(repo_config.get("llm", {}), dict) else {}
     confluence_cfg = repo_config.get("confluence", {}) if isinstance(repo_config.get("confluence", {}), dict) else {}
 
     confluence_runtime = ConfluencePublisher(
@@ -105,6 +145,12 @@ def _build_runtime_config(payload: dict[str, Any]) -> RuntimeConfig:
         github_webhook_secret=str(github_cfg.get("webhook_secret", runtime.github_webhook_secret)).strip(),
         github_approval_command=str(github_cfg.get("approval_command", runtime.github_approval_command)).strip() or runtime.github_approval_command,
         github_approval_label=str(github_cfg.get("approval_label", runtime.github_approval_label)).strip() or runtime.github_approval_label,
+        llm_api_key=str(llm_cfg.get("api_key", runtime.llm_api_key)).strip(),
+        llm_base_url=str(llm_cfg.get("base_url", runtime.llm_base_url)).strip(),
+        llm_model=str(llm_cfg.get("model", runtime.llm_model)).strip() or runtime.llm_model,
+        llm_temperature=float(llm_cfg.get("temperature", runtime.llm_temperature)),
+        llm_prompt_set=str(llm_cfg.get("prompt_set", runtime.llm_prompt_set)).strip() or runtime.llm_prompt_set,
+        llm_pr_summary_max_chars=int(llm_cfg.get("pr_summary_max_chars", runtime.llm_pr_summary_max_chars)),
         confluence=confluence_runtime,
     )
 
@@ -182,7 +228,13 @@ def summarize_sql(request: SummarizeRequest) -> SummarizeResponse:
     if not request.diff and not request.current_sql and not request.previous_sql:
         raise HTTPException(status_code=400, detail="Provide at least one of diff, current_sql, or previous_sql")
 
-    result = orchestrator.run(previous_sql=request.previous_sql, current_sql=request.current_sql, diff=request.diff)
+    runtime = _default_runtime_config()
+    result = _run_orchestrator(
+        runtime=runtime,
+        previous_sql=request.previous_sql,
+        current_sql=request.current_sql,
+        diff=request.diff,
+    )
     return SummarizeResponse(result=result)
 
 
@@ -250,7 +302,7 @@ def _handle_github_pull_request_event(payload: dict[str, Any], runtime: RuntimeC
     if not sql_changes:
         return WebhookResponse(ok=True, message="No SQL changes found in GitHub PR")
 
-    comment_markdown, doc_payloads = _build_github_pr_summary_comment(sql_changes, confluence=runtime.confluence)
+    comment_markdown, doc_payloads = _build_github_pr_summary_comment(sql_changes, runtime=runtime, confluence=runtime.confluence)
     _store_pr_analysis(payload=payload, owner=owner, repo=repo, pull_number=pull_number, sql_changes=sql_changes, doc_payloads=doc_payloads)
 
     if not comment_markdown:
@@ -396,7 +448,8 @@ def bitbucket_webhook(payload: dict[str, Any]) -> WebhookResponse:
         return WebhookResponse(ok=True, message="No SQL changes found in Bitbucket PR")
 
     combined_diff = "\n\n".join(patches)
-    result = orchestrator.run(diff=combined_diff)
+    runtime = _default_runtime_config()
+    result = _run_orchestrator(runtime=runtime, diff=combined_diff)
 
     _post_bitbucket_pr_comment(payload=payload, markdown=result.markdown)
     return WebhookResponse(ok=True, message="Bitbucket webhook processed", markdown=result.markdown)
@@ -409,7 +462,8 @@ async def demo_from_raw_request(request: Request) -> dict[str, Any]:
     current_sql = str(payload.get("current_sql", ""))
     diff = str(payload.get("diff", ""))
 
-    result = orchestrator.run(previous_sql=previous_sql, current_sql=current_sql, diff=diff)
+    runtime = _default_runtime_config()
+    result = _run_orchestrator(runtime=runtime, previous_sql=previous_sql, current_sql=current_sql, diff=diff)
     return {"ok": True, "markdown": result.markdown, "result": result.model_dump()}
 
 
@@ -546,6 +600,7 @@ def _update_github_comment(
 
 def _build_github_pr_summary_comment(
     sql_changes: list[GithubPRSQLFileChange],
+    runtime: RuntimeConfig,
     confluence: ConfluencePublisher = confluence_publisher,
 ) -> tuple[str, list[dict[str, Any]]]:
     modified_changes = [change for change in sql_changes if change.status in {"modified", "renamed"}]
@@ -558,29 +613,30 @@ def _build_github_pr_summary_comment(
     if modified_changes:
         sections.append("### Modified SQL Files")
         for change in modified_changes:
-            summary, doc_payload = _summarize_github_sql_change(change)
+            summary, doc_payload = _summarize_github_sql_change(change, runtime=runtime)
             doc_payloads.append(doc_payload.model_dump())
             sections.append(f"- **{change.filename}**: {summary}")
 
     if added_changes:
         sections.append("### New SQL Files")
         for change in added_changes:
-            sections.append(
-                f"- **{change.filename}**: New SQL file detected. Documentation will be published after PR merge."
-            )
+            summary, doc_payload = _summarize_github_sql_change(change, runtime=runtime)
+            doc_payloads.append(doc_payload.model_dump())
+            sections.append(f"- **{change.filename}**: {summary}")
 
     if deleted_changes:
         sections.append("### Deleted SQL Files")
         for change in deleted_changes:
+            summary, _ = _summarize_github_sql_change(change, runtime=runtime)
             existing_page = confluence.find_page_for_filename(change.filename) if confluence.enabled else None
             page_url = str(existing_page.get("url", "")) if existing_page else ""
             if page_url:
                 sections.append(
-                    f"- **{change.filename}**: This SQL file is being deleted in this PR. [Confluence]({page_url}) (Deleted or moved will be added after Published.)"
+                    f"- **{change.filename}**: {summary} [Confluence]({page_url}) (Deleted or moved will be added after Published.)"
                 )
             else:
                 sections.append(
-                    f"- **{change.filename}**: This SQL file is being deleted in this PR. Existing documentation will be marked as Code moved or deleted after PR merge. (Deleted or moved will be added after Published.)"
+                    f"- **{change.filename}**: {summary} Existing documentation will be marked as Code moved or deleted after PR merge. (Deleted or moved will be added after Published.)"
                 )
 
     status_lines = _build_pr_file_status_lines(sql_changes, confluence=confluence)
@@ -687,7 +743,7 @@ def _refresh_pr_comment_after_publication(
     if existing_comment_markdown:
         comment_markdown = _replace_documentation_status_section(existing_comment_markdown, status_lines)
     else:
-        comment_markdown, _ = _build_github_pr_summary_comment(sql_changes, confluence=runtime.confluence)
+        comment_markdown, _ = _build_github_pr_summary_comment(sql_changes, runtime=runtime, confluence=runtime.confluence)
         comment_markdown = _replace_documentation_status_section(comment_markdown, status_lines)
 
     _upsert_github_pr_comment(
@@ -700,24 +756,17 @@ def _refresh_pr_comment_after_publication(
     )
 
 
-def _summarize_github_sql_change(change: GithubPRSQLFileChange) -> tuple[str, PRFileDocPayload]:
-    if not change.patch:
-        fallback = "SQL file changed in this PR, but GitHub did not provide a patch for summarization."
-        doc_payload = PRFileDocPayload(
-            filename=change.filename,
-            summary=fallback,
-            markdown=fallback,
-            change_type="UNKNOWN",
-            impact_level="medium",
-            affected_objects=[],
-            suggested_doc_updates=[],
-            rationale="Patch omitted by GitHub API payload.",
-        )
-        return fallback, doc_payload
-
-    diff = f"# File: {change.filename}\n{change.patch}"
-    result = orchestrator.run(diff=diff)
-    short_summary = _to_pr_safe_summary(result.summary)
+def _summarize_github_sql_change(change: GithubPRSQLFileChange, runtime: RuntimeConfig) -> tuple[str, PRFileDocPayload]:
+    patch_or_note = change.patch or "(Patch omitted by GitHub API payload for this file.)"
+    diff = f"# File: {change.filename}\n{patch_or_note}"
+    result = _run_orchestrator(runtime=runtime, diff=diff)
+    pr_summary = _build_runtime_llm_client(runtime).summarize_pr_change(
+        filename=change.filename,
+        status=change.status,
+        previous_filename=change.previous_filename,
+        sql_diff=patch_or_note,
+    )
+    short_summary = _to_pr_safe_summary(pr_summary.summary, runtime=runtime)
     doc_payload = PRFileDocPayload(
         filename=change.filename,
         summary=result.summary,
@@ -731,8 +780,8 @@ def _summarize_github_sql_change(change: GithubPRSQLFileChange) -> tuple[str, PR
     return short_summary, doc_payload
 
 
-def _to_pr_safe_summary(summary: str, max_len: int | None = None) -> str:
-    max_chars = max_len if max_len is not None else settings.pr_summary_max_chars
+def _to_pr_safe_summary(summary: str, runtime: RuntimeConfig, max_len: int | None = None) -> str:
+    max_chars = max_len if max_len is not None else runtime.llm_pr_summary_max_chars
     cleaned = re.sub(r"\s+", " ", summary).strip()
     if len(cleaned) <= max_chars:
         return cleaned
@@ -758,6 +807,11 @@ def _build_publish_record_from_merged_sql(
         return record
 
     publish_payloads: list[dict[str, Any]] = []
+    previous_payload_by_filename = {
+        str(item.get("filename", "")): str(item.get("summary", ""))
+        for item in record.get("doc_payloads", [])
+        if isinstance(item, dict)
+    }
     for path in final_paths:
         try:
             sql_text = fetch_github_file_content(
@@ -774,7 +828,14 @@ def _build_publish_record_from_merged_sql(
         if not sql_text.strip():
             continue
 
-        publish_payloads.append(_generate_publish_sql_doc(path, sql_text).model_dump())
+        publish_payloads.append(
+            _generate_publish_sql_doc(
+                filename=path,
+                sql_text=sql_text,
+                pr_summary=previous_payload_by_filename.get(path, ""),
+                runtime=runtime,
+            ).model_dump()
+        )
 
     for path in deleted_paths:
         publish_payloads.append(_generate_deleted_sql_doc(path).model_dump())
@@ -881,39 +942,37 @@ def _ensure_confluence_link_at_fourth_line(sql_text: str, confluence_url: str) -
     return rebuilt
 
 
-def _generate_publish_sql_doc(filename: str, sql_text: str) -> PublishedSQLDocPayload:
+def _generate_publish_sql_doc(
+    filename: str,
+    sql_text: str,
+    pr_summary: str,
+    runtime: RuntimeConfig,
+) -> PublishedSQLDocPayload:
     change_type = detect_change_type(sql_text)
     affected_objects = extract_affected_objects(sql_text)
     object_types = extract_object_types(sql_text)
     table_details = extract_table_details(sql_text)
     join_details = extract_join_details(sql_text)
     filter_details = extract_filter_details(sql_text)
-
-    fallback = {
-        "full_summary": _build_publish_summary_fallback(change_type, table_details, join_details, filter_details),
-        "sql_description": _build_publish_description_fallback(object_types, table_details, join_details, filter_details, affected_objects),
-        "object_types": object_types,
-        "table_details": table_details,
-        "join_details": join_details,
-        "filter_details": filter_details,
-        "affected_objects": affected_objects,
-    }
-
-    response = publish_llm_client.request_json(
-        prompt=build_publish_doc_prompt(sql_text=sql_text, change_type=change_type, affected_objects=affected_objects),
-        fallback=fallback,
+    response = _build_runtime_llm_client(runtime).generate_publish_doc(
+        sql_text=sql_text,
+        pr_summary=pr_summary,
+        change_type=change_type,
+        affected_objects=affected_objects,
+        object_types=object_types,
+        table_details=table_details,
     )
 
     return PublishedSQLDocPayload(
         filename=filename,
-        full_summary=str(response.get("full_summary", fallback["full_summary"])),
-        sql_description=str(response.get("sql_description", fallback["sql_description"])),
-        object_types=[str(item) for item in response.get("object_types", object_types)],
-        table_details=[str(item) for item in response.get("table_details", table_details)],
-        join_details=[str(item) for item in response.get("join_details", join_details)],
-        filter_details=[str(item) for item in response.get("filter_details", filter_details)],
-        affected_objects=[str(item) for item in response.get("affected_objects", affected_objects)],
-        page_heading=str(response.get("page_heading", "")),
+        full_summary=str(response.full_summary),
+        sql_description=str(response.sql_description),
+        object_types=[str(item) for item in response.object_types],
+        table_details=[str(item) for item in response.table_details],
+        join_details=[str(item) for item in response.join_details],
+        filter_details=[str(item) for item in response.filter_details],
+        affected_objects=[str(item) for item in response.affected_objects],
+        page_heading=str(response.page_heading),
     )
 
 
@@ -928,36 +987,6 @@ def _generate_deleted_sql_doc(filename: str) -> PublishedSQLDocPayload:
         filter_details=[],
         affected_objects=[],
         page_heading="Code moved or deleted",
-    )
-
-
-def _build_publish_summary_fallback(
-    change_type: str,
-    table_details: list[str],
-    join_details: list[str],
-    filter_details: list[str],
-) -> str:
-    tables = ", ".join(table_details[:5]) if table_details else "no clearly parsed tables"
-    joins = f" It uses {len(join_details)} join clause(s)." if join_details else ""
-    filters = f" It applies {len(filter_details)} filter clause(s)." if filter_details else ""
-    return f"This final merged SQL file is classified as {change_type} and works with {tables}.{joins}{filters}".strip()
-
-
-def _build_publish_description_fallback(
-    object_types: list[str],
-    table_details: list[str],
-    join_details: list[str],
-    filter_details: list[str],
-    affected_objects: list[str],
-) -> str:
-    type_text = ", ".join(object_types) if object_types else "UNKNOWN"
-    table_text = ", ".join(table_details[:8]) if table_details else "No table references detected"
-    join_text = "; ".join(join_details[:5]) if join_details else "No explicit joins detected"
-    filter_text = "; ".join(filter_details[:5]) if filter_details else "No explicit filters detected"
-    object_text = ", ".join(affected_objects[:8]) if affected_objects else "No affected objects detected"
-    return (
-        f"Object types: {type_text}. Tables or primary objects: {table_text}. "
-        f"Join details: {join_text}. Filter details: {filter_text}. Affected objects: {object_text}."
     )
 
 

@@ -1,3 +1,10 @@
+# Purpose : Top-level agent orchestrator. Coordinates SQLSummarizerAgent and DocumentationSuggesterAgent
+#           to produce a unified AgentResult from a SQL diff or before/after SQL text.
+#           Handles diff generation and sanity checks.
+# Called by: src/api/routes.py (_handle_github_pull_request_event, summarize_sql endpoint),
+#            src/local_batch.py (process_sql_directory),
+#            tests/test_orchestrator.py.
+
 from src.agents.doc_suggester import DocumentationSuggesterAgent
 from src.agents.sql_summarizer import SQLSummarizerAgent
 from src.models import AgentResult
@@ -7,8 +14,7 @@ from src.tools.sql_parser import basic_sql_sanity_checks
 
 
 class SQLDocumentationOrchestrator:
-    def __init__(self) -> None:
-        llm_client = LLMClient()
+    def __init__(self, llm_client: LLMClient) -> None:
         self.summarizer = SQLSummarizerAgent(llm_client=llm_client)
         self.doc_suggester = DocumentationSuggesterAgent(llm_client=llm_client)
 

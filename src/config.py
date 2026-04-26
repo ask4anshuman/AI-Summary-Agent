@@ -1,3 +1,10 @@
+# Purpose : Central settings loader. Reads config/agent.yml and environment variables (.env),
+#           merges them into a frozen Settings dataclass, and exposes a global `settings` singleton.
+#           If no top-level llm/github/confluence sections exist in the YAML, it auto-promotes
+#           the first registered repo's config as the global fallback.
+# Called by: src/api/routes.py (settings singleton), src/tools/llm_tools.py (API key / model),
+#            src/tools/confluence_tools.py (Confluence credentials).
+
 import os
 from dataclasses import dataclass
 from typing import Any
@@ -101,6 +108,7 @@ class Settings:
     openai_model: str = _get_setting_str("OPENAI_MODEL", "llm.model", "gpt-4o-mini")
     openai_temperature: float = _get_setting_float("OPENAI_TEMPERATURE", "llm.temperature", 0.1)
     pr_summary_max_chars: int = _get_setting_int("PR_SUMMARY_MAX_CHARS", "llm.pr_summary_max_chars", 280)
+    openai_prompt_set: str = _get_setting_str("OPENAI_PROMPT_SET", "llm.prompt_set", "default")
 
     github_api_base_url: str = _get_setting_str("GITHUB_API_BASE_URL", "github.api_base_url", "")
     github_token: str = _get_setting_str("GITHUB_TOKEN", "github.token", "")
@@ -127,6 +135,7 @@ class Settings:
     app_host: str = _get_setting_str("APP_HOST", "app.host", "0.0.0.0")
     app_port: int = _get_setting_int("APP_PORT", "app.port", 8000)
     repo_registry_file: str = _get_setting_str("REPO_REGISTRY_FILE", "app.repo_registry_file", "config/agent.yml")
+    prompts_file: str = _get_setting_str("PROMPTS_FILE", "app.prompts_file", "config/prompts.yml")
 
 
 settings = Settings()

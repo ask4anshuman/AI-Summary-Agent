@@ -109,7 +109,7 @@ def test_github_webhook_accepts_valid_signature(client: TestClient) -> None:
 def test_github_webhook_creates_sticky_summary_for_modified_sql(client: TestClient) -> None:
     original_fetcher = routes.fetch_github_pr_sql_file_changes
     original_upsert = routes._upsert_github_pr_comment
-    original_run = routes.orchestrator.run
+    original_run = routes._run_orchestrator
     original_store = routes.approval_store.upsert_pr_analysis
     captured: dict[str, str] = {}
     stored: dict[str, object] = {}
@@ -121,7 +121,7 @@ def test_github_webhook_creates_sticky_summary_for_modified_sql(client: TestClie
             patch="@@ -1 +1 @@\n-select * from orders\n+select order_id, total_amount from orders",
         )
     ]
-    routes.orchestrator.run = lambda **_: type(
+    routes._run_orchestrator = lambda **_: type(
         "Result",
         (),
         {
@@ -148,14 +148,13 @@ def test_github_webhook_creates_sticky_summary_for_modified_sql(client: TestClie
     finally:
         routes.fetch_github_pr_sql_file_changes = original_fetcher
         routes._upsert_github_pr_comment = original_upsert
-        routes.orchestrator.run = original_run
+        routes._run_orchestrator = original_run
         routes.approval_store.upsert_pr_analysis = original_store
 
     assert response.status_code == 200
     assert "## SQL PR Summary" in captured["markdown"]
     assert "db/orders.sql" in captured["markdown"]
-    assert "explicit order columns" in captured["markdown"].lower()
-    assert "..." in captured["markdown"]
+    assert "mocked concise pr summary" in captured["markdown"].lower()
     assert stored["modified_files"] == ["db/orders.sql"]
     assert isinstance(stored["doc_payloads"], list)
     assert len(stored["doc_payloads"]) == 1
@@ -164,7 +163,7 @@ def test_github_webhook_creates_sticky_summary_for_modified_sql(client: TestClie
 def test_github_webhook_posts_merge_note_for_new_sql_files(client: TestClient) -> None:
     original_fetcher = routes.fetch_github_pr_sql_file_changes
     original_upsert = routes._upsert_github_pr_comment
-    original_run = routes.orchestrator.run
+    original_run = routes._run_orchestrator
     original_store = routes.approval_store.upsert_pr_analysis
     captured: dict[str, str] = {}
     called = {"run": 0}
@@ -177,7 +176,19 @@ def test_github_webhook_posts_merge_note_for_new_sql_files(client: TestClient) -
             patch="@@ -0,0 +1 @@\n+create table new_feature(id int)",
         )
     ]
-    routes.orchestrator.run = lambda **_: called.__setitem__("run", called["run"] + 1)
+    routes._run_orchestrator = lambda **_: called.__setitem__("run", called["run"] + 1) or type(
+        "Result",
+        (),
+        {
+            "summary": "Mock summary",
+            "markdown": "## SQL Change Summary\nExample",
+            "change_type": "DDL",
+            "impact_level": "medium",
+            "affected_objects": ["new_feature"],
+            "suggested_doc_updates": ["Release notes"],
+            "rationale": "Columns changed",
+        },
+    )()
     routes._upsert_github_pr_comment = lambda **kwargs: captured.update({"markdown": kwargs["markdown"]})
     routes.approval_store.upsert_pr_analysis = lambda **kwargs: stored.update(kwargs)
 
@@ -192,12 +203,12 @@ def test_github_webhook_posts_merge_note_for_new_sql_files(client: TestClient) -
     finally:
         routes.fetch_github_pr_sql_file_changes = original_fetcher
         routes._upsert_github_pr_comment = original_upsert
-        routes.orchestrator.run = original_run
+        routes._run_orchestrator = original_run
         routes.approval_store.upsert_pr_analysis = original_store
 
     assert response.status_code == 200
-    assert called["run"] == 0
-    assert "Documentation will be published after PR merge" in captured["markdown"]
+    assert called["run"] == 1
+    assert "mocked concise pr summary" in captured["markdown"].lower()
     assert stored["new_files"] == ["db/new_feature.sql"]
     assert "### Documentation Status" in captured["markdown"]
     assert "Publish after merged" in captured["markdown"]
@@ -206,7 +217,7 @@ def test_github_webhook_posts_merge_note_for_new_sql_files(client: TestClient) -
 def test_github_webhook_posts_delete_note_for_deleted_sql_files(client: TestClient) -> None:
     original_fetcher = routes.fetch_github_pr_sql_file_changes
     original_upsert = routes._upsert_github_pr_comment
-    original_run = routes.orchestrator.run
+    original_run = routes._run_orchestrator
     original_store = routes.approval_store.upsert_pr_analysis
     original_find = routes.confluence_publisher.find_page_for_filename
     captured: dict[str, str] = {}
@@ -220,7 +231,19 @@ def test_github_webhook_posts_delete_note_for_deleted_sql_files(client: TestClie
             patch="@@ -1 +0,0 @@\n-drop table legacy_cleanup;",
         )
     ]
-    routes.orchestrator.run = lambda **_: called.__setitem__("run", called["run"] + 1)
+    routes._run_orchestrator = lambda **_: called.__setitem__("run", called["run"] + 1) or type(
+        "Result",
+        (),
+        {
+            "summary": "Mock summary",
+            "markdown": "## SQL Change Summary\nExample",
+            "change_type": "DDL",
+            "impact_level": "medium",
+            "affected_objects": ["legacy_cleanup"],
+            "suggested_doc_updates": ["Release notes"],
+            "rationale": "Delete table",
+        },
+    )()
     routes._upsert_github_pr_comment = lambda **kwargs: captured.update({"markdown": kwargs["markdown"]})
     routes.approval_store.upsert_pr_analysis = lambda **kwargs: stored.update(kwargs)
     routes.confluence_publisher.find_page_for_filename = lambda filename: {
@@ -241,15 +264,15 @@ def test_github_webhook_posts_delete_note_for_deleted_sql_files(client: TestClie
     finally:
         routes.fetch_github_pr_sql_file_changes = original_fetcher
         routes._upsert_github_pr_comment = original_upsert
-        routes.orchestrator.run = original_run
+        routes._run_orchestrator = original_run
         routes.approval_store.upsert_pr_analysis = original_store
         routes.confluence_publisher.find_page_for_filename = original_find
 
     assert response.status_code == 200
-    assert called["run"] == 0
+    assert called["run"] == 1
     assert "### Deleted SQL Files" in captured["markdown"]
     assert "db/legacy_cleanup.sql" in captured["markdown"]
-    assert "being deleted" in captured["markdown"]
+    assert "mocked concise pr summary" in captured["markdown"].lower()
     assert "Confluence" in captured["markdown"]
     assert "pageId=11" in captured["markdown"]
     assert "Deleted or moved will be added after Published." in captured["markdown"]

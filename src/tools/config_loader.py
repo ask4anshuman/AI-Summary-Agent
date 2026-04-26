@@ -1,3 +1,9 @@
+# Purpose : YAML config file loader with environment variable resolution.
+#           Reads a YAML file, recursively replaces ${VAR_NAME} references with their environment
+#           variable values, and provides a helper to navigate nested config by dotted key path.
+# Called by: src/config.py (loads config/agent.yml on startup),
+#            src/tools/repo_registry.py (resolve_env_vars on registry reads).
+
 import os
 import re
 from pathlib import Path

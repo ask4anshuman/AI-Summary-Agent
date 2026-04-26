@@ -1,3 +1,9 @@
+# Purpose : GitHub API helpers. Fetches PR file changes, filters for SQL files, generates unified
+#           diffs, posts/updates PR comments, fetches and updates file contents via the GitHub
+#           Contents API, and normalises file status values from GitHub webhook payloads.
+# Called by: src/api/routes.py (all GitHub webhook handlers and post-merge link injection).
+#            tests/test_git_tools.py.
+
 import difflib
 import base64
 from dataclasses import dataclass

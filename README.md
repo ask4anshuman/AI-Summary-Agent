@@ -18,10 +18,13 @@ tests/
 
 Environment Variables
 OPENAI_API_KEY
+OPENAI_BASE_URL
 OPENAI_MODEL
 OPENAI_TEMPERATURE
+OPENAI_PROMPT_SET
 PR_SUMMARY_MAX_CHARS
 APP_CONFIG_FILE
+PROMPTS_FILE
 GITHUB_API_BASE_URL
 GITHUB_TOKEN
 GITHUB_WEBHOOK_SECRET
@@ -77,12 +80,17 @@ Merge + Confluence Publish
 
 YAML Config Loader
 1. The app reads YAML mappings from `APP_CONFIG_FILE` (default `config/agent.yml`).
-2. Supported mapping sections: `llm`, `github`, `confluence`, `bitbucket`, `app`.
+2. Supported mapping sections: `llm`, `github`, `confluence`, `bitbucket`, `app`, `repos`.
 3. Environment variables still work and override YAML values when both are set.
 4. Example mapped keys:
-   - `llm.model`, `llm.temperature`, `llm.pr_summary_max_chars`
+   - `llm.model`, `llm.temperature`, `llm.pr_summary_max_chars`, `llm.prompt_set`
    - `github.api_base_url`, `github.token`, `github.approval.command`, `github.approval.label`
    - `confluence.base_url`, `confluence.space`, `confluence.parent_page_id`, `confluence.username`, `confluence.api_token`
+
+Prompt Configuration
+1. Prompt templates are externalized in `config/prompts.yml`.
+2. Each repo can select prompt variants using `repos.<owner/repo>.llm.prompt_set`.
+3. Runtime loads prompts from `app.prompts_file` (default `config/prompts.yml`).
 
 Repository Registration API (Multi-Repo)
 1. Register a repo with per-repo GitHub, LLM, and Confluence settings using `POST /repos/register`.

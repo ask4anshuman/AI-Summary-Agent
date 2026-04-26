@@ -1,3 +1,10 @@
+# Purpose : Persistent store for PR approval and publication state.
+#           Tracks each PR's analysis payload, approval status, and Confluence publish result
+#           in a local JSON file. Keys are namespaced as owner/repo#PR so multiple repos
+#           share one file safely. Records older than 10 days are pruned automatically.
+# Called by: src/api/routes.py (upsert on PR open/sync, mark_approval on comment/label/review,
+#            mark_publication after Confluence publish).
+
 import json
 from datetime import datetime, timedelta, timezone
 from pathlib import Path

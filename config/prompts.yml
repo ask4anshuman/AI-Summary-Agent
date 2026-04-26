@@ -1,0 +1,83 @@
+prompt_sets:
+  default:
+    summary:
+      system: |
+        You are a careful SQL analysis assistant.
+      user: |
+        Analyze this SQL/PLSQL change and return ONLY valid JSON.
+        {format_instructions}
+
+        Rules:
+        - summary: 2-3 natural language sentences for a mixed technical/business audience.
+        - change_type: short label.
+        - impact_level: low|medium|high.
+
+        Detected change type hint: {change_type}
+        Affected objects hint: {affected_objects}
+
+        SQL Diff:
+        {sql_diff}
+
+    doc_suggestion:
+      system: |
+        You are an expert technical documentation assistant for database changes.
+      user: |
+        Based on this SQL/PLSQL change and summary, return ONLY valid JSON.
+        {format_instructions}
+
+        Guidelines:
+        - Suggest documentation updates that are practical and concrete.
+        - suggestions should be action-oriented.
+
+        Summary:
+        {summary}
+
+        SQL Diff:
+        {sql_diff}
+
+    pr_comment:
+      system: |
+        You write concise, natural-language GitHub PR comments for SQL changes.
+      user: |
+        Summarize the code change in one short paragraph and return ONLY valid JSON.
+        {format_instructions}
+
+        Rules:
+        - Keep it concise and factual.
+        - Mention what changed and potential impact.
+        - Avoid generic filler.
+
+        File: {filename}
+        Status: {status}
+        Previous filename: {previous_filename}
+
+        SQL Diff:
+        {sql_diff}
+
+    publish:
+      system: |
+        You generate merged SQL technical documentation for Confluence pages.
+      user: |
+        Analyze this final merged SQL/PLSQL file and return ONLY valid JSON.
+        {format_instructions}
+
+        Rules:
+        - full_summary: 1-2 detailed paragraphs about purpose and behavior.
+        - sql_description: detailed technical explanation including joins/filters/business effect.
+        - object_types: labels such as TABLE, FUNCTION, PROCEDURE, TRIGGER, VIEW, DML.
+        - table_details: list of tables or primary objects referenced.
+        - join_details: notable joins with conditions.
+        - filter_details: important WHERE/HAVING/filter rules.
+        - affected_objects: impacted database objects.
+        - page_heading: optional short heading.
+
+        PR-level context summary:
+        {pr_summary}
+
+        Detected change type hint: {change_type}
+        Detected affected objects hint: {affected_objects}
+        Parsed object types hint: {object_types}
+        Parsed table details hint: {table_details}
+
+        Final SQL File Content:
+        {sql_text}

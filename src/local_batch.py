@@ -1,12 +1,19 @@
+# Purpose : CLI entry point for running SQL documentation generation locally without a GitHub webhook.
+#           Reads .sql files from an input directory, runs the orchestrator on each file, and writes
+#           JSON summaries to an output directory.
+# Called by: `python -m src.local_batch` from the command line (manual / CI batch runs).
+#            tests/test_orchestrator.py calls process_sql_directory() directly in unit tests.
+
 import argparse
 import json
 from pathlib import Path
 
 from src.agents.orchestrator import SQLDocumentationOrchestrator
+from src.tools.llm_tools import LLMClient
 
 
 def process_sql_directory(input_dir: Path, output_dir: Path) -> list[Path]:
-    orchestrator = SQLDocumentationOrchestrator()
+    orchestrator = SQLDocumentationOrchestrator(llm_client=LLMClient())
     output_dir.mkdir(parents=True, exist_ok=True)
 
     written_files: list[Path] = []

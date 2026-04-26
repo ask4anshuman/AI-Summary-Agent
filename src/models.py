@@ -1,3 +1,8 @@
+# Purpose : Pydantic data models shared across the application — API request/response schemas,
+#           agent result structures, and repo registration models.
+# Called by: src/api/routes.py (request validation, response serialisation),
+#            src/agents/orchestrator.py (AgentResult), src/tools/git_tools.py (GithubPRSQLFileChange).
+
 from typing import Any
 
 from pydantic import BaseModel, Field
@@ -75,6 +80,8 @@ class RepoLlmConfig(BaseModel):
     base_url: str = ""
     model: str = ""
     temperature: float = 0.1
+    pr_summary_max_chars: int = 280
+    prompt_set: str = "default"
 
 
 class RepoConfluenceConfig(BaseModel):

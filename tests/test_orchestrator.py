@@ -1,9 +1,10 @@
 from src.agents.orchestrator import SQLDocumentationOrchestrator
 from src.local_batch import process_sql_directory
+from src.tools.llm_tools import LLMClient
 
 
 def test_orchestrator_run_returns_agent_result() -> None:
-    orch = SQLDocumentationOrchestrator()
+    orch = SQLDocumentationOrchestrator(llm_client=LLMClient())
     result = orch.run(
         previous_sql="create table dept(id int);",
         current_sql="create table dept(id int, name varchar(50));"

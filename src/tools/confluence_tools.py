@@ -1,3 +1,9 @@
+# Purpose : Confluence REST API client. Creates and updates Confluence pages with SQL documentation,
+#           searches for existing pages by title, resolves the target parent page using per-repo
+#           folder-to-page path mappings (longest-prefix match), and returns page URLs.
+# Called by: src/api/routes.py (_build_runtime_config constructs ConfluencePublisher per request;
+#            used in _handle_github_pull_request_event for publish-on-merge).
+
 from typing import Any
 
 import requests
