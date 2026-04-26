@@ -9,7 +9,9 @@
 import hashlib
 import hmac
 import json
+import logging
 import re
+import threading
 from dataclasses import dataclass
 from typing import Any
 
@@ -59,6 +61,7 @@ confluence_publisher = ConfluencePublisher(
     parent_page_id=settings.confluence_parent_page_id,
 )
 STICKY_PR_COMMENT_MARKER = "<!-- ai-sql-summary-agent:sticky-pr-summary -->"
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -277,6 +280,41 @@ def update_repo_prompts(owner: str, repo: str, request: dict[str, Any]) -> dict[
     }
 
 
+@router.post("/repos/{owner}/{repo}/prs/{pull_number}/publish", response_model=WebhookResponse)
+def republish_pr(owner: str, repo: str, pull_number: int) -> WebhookResponse:
+    """Re-attempt Confluence publish for an approved, merged PR whose previous publish failed."""
+    record = approval_store.get_pr_record(owner=owner, repo=repo, pull_number=pull_number)
+    if not record:
+        raise HTTPException(status_code=404, detail="No stored PR record found")
+
+    approval = record.get("approval", {})
+    if not bool(approval.get("approved", False)):
+        raise HTTPException(status_code=409, detail="PR has not been approved; publish skipped")
+
+    runtime = _build_runtime_config({"repository": {"full_name": f"{owner}/{repo}"}})
+    if not runtime.confluence.enabled:
+        raise HTTPException(status_code=409, detail="Confluence is not configured for this repository")
+
+    publish_result = runtime.confluence.publish_pr_record(
+        owner=owner,
+        repo=repo,
+        pull_number=pull_number,
+        record=record,
+    )
+    approval_store.mark_publication(
+        owner=owner,
+        repo=repo,
+        pull_number=pull_number,
+        published=bool(publish_result.get("ok", False)),
+        message=str(publish_result.get("message", "")),
+        page_id=str(publish_result.get("page_id", "")),
+        title=str(publish_result.get("title", "")),
+        pages=publish_result.get("pages", []),
+    )
+    _refresh_pr_comment_after_publication(owner=owner, repo=repo, pull_number=pull_number, runtime=runtime)
+    return WebhookResponse(ok=bool(publish_result.get("ok", False)), message=str(publish_result.get("message", "Confluence publish attempted")))
+
+
 @router.post("/summarize", response_model=SummarizeResponse)
 def summarize_sql(request: SummarizeRequest) -> SummarizeResponse:
     if not request.diff and not request.current_sql and not request.previous_sql:
@@ -304,6 +342,17 @@ async def github_webhook(request: Request) -> WebhookResponse:
     _validate_github_signature(request=request, raw_body=raw_body, webhook_secret=runtime.github_webhook_secret)
 
     event_name = request.headers.get("X-GitHub-Event", "pull_request")
+    delivery_id = request.headers.get("X-GitHub-Delivery", "").strip()
+
+    # GitHub waits only a short time for webhook acknowledgements. For real pull_request
+    # deliveries, return quickly and continue heavy processing in the background.
+    if event_name == "pull_request" and delivery_id:
+        threading.Thread(
+            target=_process_github_webhook_delivery,
+            kwargs={"payload": payload, "runtime": runtime, "delivery_id": delivery_id},
+            daemon=True,
+        ).start()
+        return WebhookResponse(ok=True, message=f"Accepted GitHub delivery {delivery_id} for background processing")
 
     if event_name == "pull_request":
         return _handle_github_pull_request_event(payload, runtime=runtime)
@@ -313,6 +362,14 @@ async def github_webhook(request: Request) -> WebhookResponse:
         return _handle_github_pull_request_review_event(payload, runtime=runtime)
 
     return WebhookResponse(ok=True, message=f"Ignored GitHub event: {event_name}")
+
+
+def _process_github_webhook_delivery(payload: dict[str, Any], runtime: RuntimeConfig, delivery_id: str) -> None:
+    try:
+        result = _handle_github_pull_request_event(payload, runtime=runtime)
+        logger.info("GitHub delivery %s processed: %s", delivery_id, result.message)
+    except Exception:
+        logger.exception("GitHub delivery %s failed during background processing", delivery_id)
 
 
 def _handle_github_pull_request_event(payload: dict[str, Any], runtime: RuntimeConfig | None = None) -> WebhookResponse:

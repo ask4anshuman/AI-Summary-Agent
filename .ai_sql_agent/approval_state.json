@@ -590,6 +590,90 @@
         "updated_at": "2026-04-23T21:16:25.927593+00:00"
       },
       "updated_at": "2026-04-23T21:16:25.927618+00:00"
+    },
+    "ask4anshuman/Agentic-SQL-Repo#11": {
+      "owner": "ask4anshuman",
+      "repo": "Agentic-SQL-Repo",
+      "pull_number": 11,
+      "head_sha": "65d903fae8e48508157f9c501474364bf3cddf9f",
+      "modified_files": [
+        "dml/update_sample.sql"
+      ],
+      "new_files": [
+        "dml/etl_enrichment_load.sql"
+      ],
+      "deleted_files": [],
+      "doc_payloads": [
+        {
+          "filename": "dml/update_sample.sql",
+          "summary": "The SQL script has been modified to update the salary of employee_id 1001 from 900000 to 0. This change may reflect a correction or adjustment in the employee's compensation. It is important to review the implications of setting the salary to zero, as it could affect payroll processing and employee morale.",
+          "markdown": "## SQL Change Summary\n- **Change Type:** Salary Update\n- **Impact Level:** high\n\nThe SQL script has been modified to update the salary of employee_id 1001 from 900000 to 0. This change may reflect a correction or adjustment in the employee's compensation. It is important to review the implications of setting the salary to zero, as it could affect payroll processing and employee morale.\n\n## Affected Objects\n- None detected\n\n## Suggested Documentation Updates\n- Update the documentation to reflect the change in salary for employee_id 1001 from 900000 to 0.\n- Add a note regarding the potential implications of setting an employee's salary to zero, including effects on payroll processing and employee morale.\n- Include a section on best practices for handling salary adjustments to ensure clarity and transparency.\n\n## Rationale\nThe change in salary for employee_id 1001 may indicate a correction or adjustment that requires clear documentation to prevent misunderstandings and ensure proper payroll processing.\n\n## SQL Sanity Checks\n- No obvious syntax warnings\n",
+          "change_type": "Salary Update",
+          "impact_level": "high",
+          "affected_objects": [],
+          "suggested_doc_updates": [
+            "Update the documentation to reflect the change in salary for employee_id 1001 from 900000 to 0.",
+            "Add a note regarding the potential implications of setting an employee's salary to zero, including effects on payroll processing and employee morale.",
+            "Include a section on best practices for handling salary adjustments to ensure clarity and transparency."
+          ],
+          "rationale": "The change in salary for employee_id 1001 may indicate a correction or adjustment that requires clear documentation to prevent misunderstandings and ensure proper payroll processing."
+        },
+        {
+          "filename": "dml/etl_enrichment_load.sql",
+          "summary": "This SQL change introduces an advanced ETL process for employee data, focusing on cleaning, validating, and enriching records before upserting them into the main employee and enriched target tables. It also includes mechanisms for tracking the ETL run status and handling rejected records for observability.",
+          "markdown": "## SQL Change Summary\n- **Change Type:** Mixed (DDL, DML)\n- **Impact Level:** high\n\nThis SQL change introduces an advanced ETL process for employee data, focusing on cleaning, validating, and enriching records before upserting them into the main employee and enriched target tables. It also includes mechanisms for tracking the ETL run status and handling rejected records for observability.\n\n## Affected Objects\n- IF\n- departments\n- employee_enriched_target\n- employees\n- etl_employee_rejects\n- etl_run_audit\n- first_name\n- full_name\n\n## Suggested Documentation Updates\n- Add a section detailing the new ETL process for employee data, including steps for cleaning, validating, and enriching records.\n- Document the structure and purpose of the new 'etl_run_audit' and 'etl_employee_rejects' tables.\n- Include examples of how to handle rejected records and the significance of the rejection reasons.\n- Update the data model to reflect the new 'employee_enriched_target' table and its relationship with existing tables.\n- Provide guidelines on how to monitor the ETL run status and interpret the results from the audit table.\n\n## Rationale\nThese updates will ensure that users understand the new ETL process, the structure of the new tables, and how to effectively manage and monitor employee data transformations.\n\n## SQL Sanity Checks\n- Parentheses appear unbalanced.\n",
+          "change_type": "Mixed (DDL, DML)",
+          "impact_level": "high",
+          "affected_objects": [
+            "IF",
+            "departments",
+            "employee_enriched_target",
+            "employees",
+            "etl_employee_rejects",
+            "etl_run_audit",
+            "first_name",
+            "full_name"
+          ],
+          "suggested_doc_updates": [
+            "Add a section detailing the new ETL process for employee data, including steps for cleaning, validating, and enriching records.",
+            "Document the structure and purpose of the new 'etl_run_audit' and 'etl_employee_rejects' tables.",
+            "Include examples of how to handle rejected records and the significance of the rejection reasons.",
+            "Update the data model to reflect the new 'employee_enriched_target' table and its relationship with existing tables.",
+            "Provide guidelines on how to monitor the ETL run status and interpret the results from the audit table."
+          ],
+          "rationale": "These updates will ensure that users understand the new ETL process, the structure of the new tables, and how to effectively manage and monitor employee data transformations."
+        }
+      ],
+      "approval": {
+        "approved": true,
+        "source": "command",
+        "actor": "ask4anshuman",
+        "detail": "/approve-sql-doc",
+        "updated_at": "2026-04-26T15:23:26.118740+00:00"
+      },
+      "publication": {
+        "published": true,
+        "message": "Confluence pages published: 2",
+        "page_id": "5931010",
+        "title": "Technical Summary for - etl_enrichment_load.sql",
+        "pages": [
+          {
+            "filename": "dml/etl_enrichment_load.sql",
+            "page_id": "5931010",
+            "title": "Technical Summary for - etl_enrichment_load.sql",
+            "url": "https://ask4anshuman.atlassian.net/wiki/pages/viewpage.action?pageId=5931010"
+          },
+          {
+            "filename": "dml/update_sample.sql",
+            "page_id": "4653058",
+            "title": "Technical Summary for - update_sample.sql",
+            "url": "https://ask4anshuman.atlassian.net/wiki/pages/viewpage.action?pageId=4653058"
+          }
+        ],
+        "updated_at": "2026-04-26T15:41:08.244330+00:00"
+      },
+      "created_at": "2026-04-26T15:10:41.099534+00:00",
+      "updated_at": "2026-04-26T15:41:08.244357+00:00"
     }
   }
 }

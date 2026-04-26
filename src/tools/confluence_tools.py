@@ -24,15 +24,19 @@ class ConfluencePublisher:
         self.username = username
         self.api_token = api_token
         self.parent_page_id = parent_page_id
+        cleaned_mappings: list[dict[str, str]] = []
+        for item in (path_mappings or []):
+            sql_path_prefix = str(item.get("sql_path_prefix", "")).strip().lstrip("/")
+            parent_page_id = str(item.get("parent_page_id", "")).strip()
+            if not sql_path_prefix or not parent_page_id:
+                continue
+            # Ignore placeholder IDs so fallback default parent is used until real IDs are configured.
+            if self._is_placeholder_parent_page_id(parent_page_id):
+                continue
+            cleaned_mappings.append({"sql_path_prefix": sql_path_prefix, "parent_page_id": parent_page_id})
+
         self.path_mappings = sorted(
-            [
-                {
-                    "sql_path_prefix": str(item.get("sql_path_prefix", "")).strip().lstrip("/"),
-                    "parent_page_id": str(item.get("parent_page_id", "")).strip(),
-                }
-                for item in (path_mappings or [])
-                if str(item.get("sql_path_prefix", "")).strip() and str(item.get("parent_page_id", "")).strip()
-            ],
+            cleaned_mappings,
             key=lambda item: len(item["sql_path_prefix"]),
             reverse=True,
         )
@@ -121,6 +125,22 @@ class ConfluencePublisher:
             if normalized.startswith(prefix):
                 return mapping["parent_page_id"]
         return self.parent_page_id
+
+    @staticmethod
+    def _is_placeholder_parent_page_id(parent_page_id: str) -> bool:
+        normalized = parent_page_id.strip().strip('"').strip("'")
+        if not normalized:
+            return True
+
+        uppercase = normalized.upper()
+        if any(token in uppercase for token in ("YOUR_", "PLACEHOLDER", "TODO", "TBD")):
+            return True
+
+        # Common placeholder pattern like 111111/222222/333333.
+        if len(normalized) >= 6 and normalized.isdigit() and len(set(normalized)) == 1:
+            return True
+
+        return False
 
     def _build_file_page_body(self, payload: dict[str, Any]) -> str:
         page_heading = str(payload.get("page_heading", "")).strip()

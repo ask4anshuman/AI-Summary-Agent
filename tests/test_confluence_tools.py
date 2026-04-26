@@ -117,3 +117,35 @@ def test_publish_pr_record_returns_error_without_payloads() -> None:
 
     assert result["ok"] is False
     assert result["message"] == "No SQL documentation payload was captured"
+
+
+def test_placeholder_path_mapping_parent_id_is_ignored() -> None:
+    publisher = ConfluencePublisher(
+        base_url="https://example.atlassian.net/wiki",
+        space_key="SPACE",
+        username="user@example.com",
+        api_token="token",
+        parent_page_id="491521",
+        path_mappings=[
+            {"sql_path_prefix": "dml/", "parent_page_id": "222222"},
+        ],
+    )
+
+    # Placeholder mapping is dropped, so no folder override remains.
+    assert publisher.path_mappings == []
+    assert publisher._resolve_parent_page_id("dml/new_file.sql") == "491521"  # type: ignore[attr-defined]
+
+
+def test_real_path_mapping_parent_id_is_used() -> None:
+    publisher = ConfluencePublisher(
+        base_url="https://example.atlassian.net/wiki",
+        space_key="SPACE",
+        username="user@example.com",
+        api_token="token",
+        parent_page_id="491521",
+        path_mappings=[
+            {"sql_path_prefix": "dml/", "parent_page_id": "4685825"},
+        ],
+    )
+
+    assert publisher._resolve_parent_page_id("dml/new_file.sql") == "4685825"  # type: ignore[attr-defined]
