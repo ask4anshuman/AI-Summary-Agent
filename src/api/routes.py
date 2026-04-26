@@ -343,10 +343,19 @@ async def github_webhook(request: Request) -> WebhookResponse:
 
     event_name = request.headers.get("X-GitHub-Event", "pull_request")
     delivery_id = request.headers.get("X-GitHub-Delivery", "").strip()
+    action = str(payload.get("action", "")).strip()
+    repo_full_name = str(payload.get("repository", {}).get("full_name", "")).strip()
 
     # GitHub waits only a short time for webhook acknowledgements. For real pull_request
     # deliveries, return quickly and continue heavy processing in the background.
     if event_name == "pull_request" and delivery_id:
+        logger.warning(
+            "GitHub webhook accepted for background processing: delivery=%s event=%s action=%s repo=%s",
+            delivery_id,
+            event_name,
+            action,
+            repo_full_name,
+        )
         threading.Thread(
             target=_process_github_webhook_delivery,
             kwargs={"payload": payload, "runtime": runtime, "delivery_id": delivery_id},
@@ -367,7 +376,7 @@ async def github_webhook(request: Request) -> WebhookResponse:
 def _process_github_webhook_delivery(payload: dict[str, Any], runtime: RuntimeConfig, delivery_id: str) -> None:
     try:
         result = _handle_github_pull_request_event(payload, runtime=runtime)
-        logger.info("GitHub delivery %s processed: %s", delivery_id, result.message)
+        logger.warning("GitHub delivery %s processed: %s", delivery_id, result.message)
     except Exception:
         logger.exception("GitHub delivery %s failed during background processing", delivery_id)
 
@@ -376,6 +385,13 @@ def _handle_github_pull_request_event(payload: dict[str, Any], runtime: RuntimeC
     runtime = runtime or _default_runtime_config()
     action = str(payload.get("action", ""))
     owner, repo, pull_number = _extract_github_pr_identity(payload)
+    logger.warning(
+        "Handling pull_request event: action=%s repo=%s/%s pull=%s",
+        action,
+        owner,
+        repo,
+        pull_number,
+    )
 
     if action == "closed":
         return _handle_github_pull_request_merge(payload=payload, owner=owner, repo=repo, pull_number=pull_number, runtime=runtime)
@@ -398,6 +414,7 @@ def _handle_github_pull_request_event(payload: dict[str, Any], runtime: RuntimeC
             return WebhookResponse(ok=True, message=f"Approval {state} via PR label")
 
     if action not in {"opened", "synchronize", "reopened"}:
+        logger.warning("Ignoring pull_request action=%s for %s/%s#%s", action, owner, repo, pull_number)
         return WebhookResponse(ok=True, message=f"Ignored GitHub action: {action}")
 
     sql_changes: list[GithubPRSQLFileChange] = []
@@ -411,6 +428,7 @@ def _handle_github_pull_request_event(payload: dict[str, Any], runtime: RuntimeC
         )
 
     if not sql_changes:
+        logger.warning("No SQL changes detected for %s/%s#%s", owner, repo, pull_number)
         return WebhookResponse(ok=True, message="No SQL changes found in GitHub PR")
 
     comment_markdown, doc_payloads = _build_github_pr_summary_comment(sql_changes, runtime=runtime, confluence=runtime.confluence)

@@ -4,9 +4,13 @@
 # Called by: src/api/routes.py (_build_runtime_config constructs ConfluencePublisher per request;
 #            used in _handle_github_pull_request_event for publish-on-merge).
 
+import html
 from typing import Any
 
 import requests
+
+
+_REQUEST_RETRY_ATTEMPTS = 3
 
 
 class ConfluencePublisher:
@@ -24,6 +28,7 @@ class ConfluencePublisher:
         self.username = username
         self.api_token = api_token
         self.parent_page_id = parent_page_id
+        self._last_error = ""
         cleaned_mappings: list[dict[str, str]] = []
         for item in (path_mappings or []):
             sql_path_prefix = str(item.get("sql_path_prefix", "")).strip().lstrip("/")
@@ -78,7 +83,8 @@ class ConfluencePublisher:
             if existing is None:
                 created = self._create_page(title=title, body=body, parent_page_id=target_parent_page_id)
                 if not created:
-                    return {"ok": False, "message": f"Failed to create Confluence page for {title}"}
+                    details = f" ({self._last_error})" if self._last_error else ""
+                    return {"ok": False, "message": f"Failed to create Confluence page for {title}{details}"}
                 page_id = str(created.get("id", ""))
                 published_pages.append({
                     "filename": filename,
@@ -90,7 +96,8 @@ class ConfluencePublisher:
 
             updated = self._update_page(page=existing, title=title, body=body, parent_page_id=target_parent_page_id)
             if not updated:
-                return {"ok": False, "message": f"Failed to update Confluence page for {title}"}
+                details = f" ({self._last_error})" if self._last_error else ""
+                return {"ok": False, "message": f"Failed to update Confluence page for {title}{details}"}
             page_id = str(existing.get("id", ""))
             published_pages.append({
                 "filename": filename,
@@ -143,14 +150,14 @@ class ConfluencePublisher:
         return False
 
     def _build_file_page_body(self, payload: dict[str, Any]) -> str:
-        page_heading = str(payload.get("page_heading", "")).strip()
-        full_summary = str(payload.get("full_summary", "")).strip() or "No summary generated."
-        sql_description = str(payload.get("sql_description", "")).strip() or "No SQL description generated."
-        object_types = [str(item) for item in payload.get("object_types", [])]
-        table_details = [str(item) for item in payload.get("table_details", [])]
-        join_details = [str(item) for item in payload.get("join_details", [])]
-        filter_details = [str(item) for item in payload.get("filter_details", [])]
-        affected_objects = [str(item) for item in payload.get("affected_objects", [])]
+        page_heading = html.escape(str(payload.get("page_heading", "")).strip())
+        full_summary = html.escape(str(payload.get("full_summary", "")).strip() or "No summary generated.")
+        sql_description = html.escape(str(payload.get("sql_description", "")).strip() or "No SQL description generated.")
+        object_types = [html.escape(str(item)) for item in payload.get("object_types", [])]
+        table_details = [html.escape(str(item)) for item in payload.get("table_details", [])]
+        join_details = [html.escape(str(item)) for item in payload.get("join_details", [])]
+        filter_details = [html.escape(str(item)) for item in payload.get("filter_details", [])]
+        affected_objects = [html.escape(str(item)) for item in payload.get("affected_objects", [])]
 
         sections: list[str] = []
         if page_heading:
@@ -186,12 +193,23 @@ class ConfluencePublisher:
         return f"<ul>{rows}</ul>"
 
     def _find_page_by_title(self, title: str) -> dict[str, Any] | None:
+        self._last_error = ""
         url = f"{self.base_url}/rest/api/content"
         params = {"spaceKey": self.space_key, "title": title, "expand": "version"}
-        try:
-            response = requests.get(url, params=params, auth=(self.username, self.api_token), timeout=20)
-            response.raise_for_status()
-        except requests.RequestException:
+        for _ in range(_REQUEST_RETRY_ATTEMPTS):
+            try:
+                response = requests.get(url, params=params, auth=(self.username, self.api_token), timeout=20)
+                response.raise_for_status()
+                break
+            except requests.RequestException as exc:
+                status = getattr(getattr(exc, "response", None), "status_code", "")
+                text = getattr(getattr(exc, "response", None), "text", "")
+                details = str(text).strip().replace("\n", " ")
+                if len(details) > 240:
+                    details = details[:240].rstrip() + "..."
+                status_part = f"status={status} " if status else ""
+                self._last_error = f"find page failed: {status_part}{details}".strip()
+        else:
             return None
 
         payload = response.json()
@@ -201,6 +219,7 @@ class ConfluencePublisher:
         return results[0]
 
     def _create_page(self, title: str, body: str, parent_page_id: str = "") -> dict[str, Any] | None:
+        self._last_error = ""
         url = f"{self.base_url}/rest/api/content"
         payload: dict[str, Any] = {
             "type": "page",
@@ -212,16 +231,27 @@ class ConfluencePublisher:
         if ancestor_id:
             payload["ancestors"] = [{"id": ancestor_id}]
 
-        try:
-            response = requests.post(url, json=payload, auth=(self.username, self.api_token), timeout=20)
-            response.raise_for_status()
-        except requests.RequestException:
+        for _ in range(_REQUEST_RETRY_ATTEMPTS):
+            try:
+                response = requests.post(url, json=payload, auth=(self.username, self.api_token), timeout=20)
+                response.raise_for_status()
+                break
+            except requests.RequestException as exc:
+                status = getattr(getattr(exc, "response", None), "status_code", "")
+                text = getattr(getattr(exc, "response", None), "text", "")
+                details = str(text).strip().replace("\n", " ")
+                if len(details) > 240:
+                    details = details[:240].rstrip() + "..."
+                status_part = f"status={status} " if status else ""
+                self._last_error = f"create page failed: {status_part}{details}".strip()
+        else:
             return None
 
         parsed = response.json()
         return parsed if isinstance(parsed, dict) else None
 
     def _update_page(self, page: dict[str, Any], title: str, body: str, parent_page_id: str = "") -> bool:
+        self._last_error = ""
         page_id = str(page.get("id", ""))
         version_number = int(page.get("version", {}).get("number", 1))
         if not page_id:
@@ -239,10 +269,18 @@ class ConfluencePublisher:
         if ancestor_id:
             payload["ancestors"] = [{"id": ancestor_id}]
 
-        try:
-            response = requests.put(url, json=payload, auth=(self.username, self.api_token), timeout=20)
-            response.raise_for_status()
-        except requests.RequestException:
-            return False
+        for _ in range(_REQUEST_RETRY_ATTEMPTS):
+            try:
+                response = requests.put(url, json=payload, auth=(self.username, self.api_token), timeout=20)
+                response.raise_for_status()
+                return True
+            except requests.RequestException as exc:
+                status = getattr(getattr(exc, "response", None), "status_code", "")
+                text = getattr(getattr(exc, "response", None), "text", "")
+                details = str(text).strip().replace("\n", " ")
+                if len(details) > 240:
+                    details = details[:240].rstrip() + "..."
+                status_part = f"status={status} " if status else ""
+                self._last_error = f"update page failed: {status_part}{details}".strip()
 
-        return True
+        return False

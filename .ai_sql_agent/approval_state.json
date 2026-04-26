@@ -674,6 +674,156 @@
       },
       "created_at": "2026-04-26T15:10:41.099534+00:00",
       "updated_at": "2026-04-26T15:41:08.244357+00:00"
+    },
+    "ask4anshuman/Agentic-SQL-Repo#12": {
+      "owner": "ask4anshuman",
+      "repo": "Agentic-SQL-Repo",
+      "pull_number": 12,
+      "head_sha": "7657de3f55e8ee6c42eb057b756e67cd29adcbb4",
+      "modified_files": [
+        "dml/etl_enrichment_load.sql"
+      ],
+      "new_files": [
+        "dml/select_complex_enriched.sql"
+      ],
+      "deleted_files": [],
+      "doc_payloads": [
+        {
+          "filename": "dml/etl_enrichment_load.sql",
+          "summary": "The SQL script has been modified to change the status of the ETL process from 'SUCCESS' to 'FAILED'. This indicates that the ETL process did not complete successfully, which may require further investigation. The message remains the same, indicating that the process included cleansing, deduplication, enrichment, and upsert operations.",
+          "markdown": "## SQL Change Summary\n- **Change Type:** Status Update\n- **Impact Level:** medium\n\nThe SQL script has been modified to change the status of the ETL process from 'SUCCESS' to 'FAILED'. This indicates that the ETL process did not complete successfully, which may require further investigation. The message remains the same, indicating that the process included cleansing, deduplication, enrichment, and upsert operations.\n\n## Affected Objects\n- None detected\n\n## Suggested Documentation Updates\n- Update the documentation to reflect the change in ETL process status from 'SUCCESS' to 'FAILED'.\n- Add a note indicating that a 'FAILED' status requires further investigation into the ETL process.\n- Ensure that the message associated with the ETL process is clearly documented to include details about cleansing, deduplication, enrichment, and upsert operations.\n\n## Rationale\nThe change in status from 'SUCCESS' to 'FAILED' indicates a significant issue in the ETL process that needs to be addressed, and the documentation should guide users on how to respond to this status change.\n\n## SQL Sanity Checks\n- No obvious syntax warnings\n",
+          "change_type": "Status Update",
+          "impact_level": "medium",
+          "affected_objects": [],
+          "suggested_doc_updates": [
+            "Update the documentation to reflect the change in ETL process status from 'SUCCESS' to 'FAILED'.",
+            "Add a note indicating that a 'FAILED' status requires further investigation into the ETL process.",
+            "Ensure that the message associated with the ETL process is clearly documented to include details about cleansing, deduplication, enrichment, and upsert operations."
+          ],
+          "rationale": "The change in status from 'SUCCESS' to 'FAILED' indicates a significant issue in the ETL process that needs to be addressed, and the documentation should guide users on how to respond to this status change."
+        },
+        {
+          "filename": "dml/select_complex_enriched.sql",
+          "summary": "This change introduces a complex SQL query designed to enrich employee data by integrating multiple sources and applying advanced filtering techniques. It utilizes Common Table Expressions (CTEs) for better organization and readability, while also implementing window functions and multi-table joins to derive meaningful insights from the employee and department data.",
+          "markdown": "## SQL Change Summary\n- **Change Type:** DML\n- **Impact Level:** medium\n\nThis change introduces a complex SQL query designed to enrich employee data by integrating multiple sources and applying advanced filtering techniques. It utilizes Common Table Expressions (CTEs) for better organization and readability, while also implementing window functions and multi-table joins to derive meaningful insights from the employee and department data.\n\n## Affected Objects\n- None detected\n\n## Suggested Documentation Updates\n- Add a section detailing the use of Common Table Expressions (CTEs) in the SQL query for improved readability.\n- Include examples of the advanced filtering techniques applied in the query.\n- Document the purpose and structure of each CTE used in the SQL query.\n- Explain the significance of window functions in deriving insights from employee data.\n- Provide a description of the multi-table joins and their role in enriching employee data.\n\n## Rationale\nThese updates will enhance the understanding of the complex SQL query, making it easier for users to comprehend the logic and structure behind the data enrichment process.\n\n## SQL Sanity Checks\n- No obvious syntax warnings\n",
+          "change_type": "DML",
+          "impact_level": "medium",
+          "affected_objects": [],
+          "suggested_doc_updates": [
+            "Add a section detailing the use of Common Table Expressions (CTEs) in the SQL query for improved readability.",
+            "Include examples of the advanced filtering techniques applied in the query.",
+            "Document the purpose and structure of each CTE used in the SQL query.",
+            "Explain the significance of window functions in deriving insights from employee data.",
+            "Provide a description of the multi-table joins and their role in enriching employee data."
+          ],
+          "rationale": "These updates will enhance the understanding of the complex SQL query, making it easier for users to comprehend the logic and structure behind the data enrichment process."
+        }
+      ],
+      "approval": {
+        "approved": true,
+        "source": "command",
+        "actor": "ask4anshuman",
+        "detail": "/approve-sql-doc",
+        "updated_at": "2026-04-26T19:41:30.343612+00:00"
+      },
+      "publication": {
+        "published": true,
+        "message": "Confluence pages published: 2",
+        "page_id": "5931010",
+        "title": "Technical Summary for - etl_enrichment_load.sql",
+        "pages": [
+          {
+            "filename": "dml/etl_enrichment_load.sql",
+            "page_id": "5931010",
+            "title": "Technical Summary for - etl_enrichment_load.sql",
+            "url": "https://ask4anshuman.atlassian.net/wiki/pages/viewpage.action?pageId=5931010"
+          },
+          {
+            "filename": "dml/select_complex_enriched.sql",
+            "page_id": "5931034",
+            "title": "Technical Summary for - select_complex_enriched.sql",
+            "url": "https://ask4anshuman.atlassian.net/wiki/pages/viewpage.action?pageId=5931034"
+          }
+        ],
+        "updated_at": "2026-04-26T19:47:43.858014+00:00"
+      },
+      "created_at": "2026-04-26T19:41:01.247878+00:00",
+      "updated_at": "2026-04-26T19:47:43.858042+00:00"
+    },
+    "ask4anshuman/Agentic-SQL-Repo#13": {
+      "owner": "ask4anshuman",
+      "repo": "Agentic-SQL-Repo",
+      "pull_number": 13,
+      "head_sha": "455cad0bb8f2b32d3f1669f32dc2bbfab29024d8",
+      "modified_files": [
+        "dml/select_complex_enriched.sql"
+      ],
+      "new_files": [
+        "dml/select_department_risk_dashboard.sql"
+      ],
+      "deleted_files": [],
+      "doc_payloads": [
+        {
+          "filename": "dml/select_complex_enriched.sql",
+          "summary": "The SQL query has been modified to change the minimum salary threshold from 30,000 to 100. This adjustment may significantly alter the results returned by the query, potentially including a larger set of records. Stakeholders should review the implications of this change on data analysis and reporting.",
+          "markdown": "## SQL Change Summary\n- **Change Type:** Salary Threshold Update\n- **Impact Level:** medium\n\nThe SQL query has been modified to change the minimum salary threshold from 30,000 to 100. This adjustment may significantly alter the results returned by the query, potentially including a larger set of records. Stakeholders should review the implications of this change on data analysis and reporting.\n\n## Affected Objects\n- None detected\n\n## Suggested Documentation Updates\n- Update the documentation to reflect the new minimum salary threshold of 100 instead of 30,000.\n- Add a note explaining the potential impact of this change on the results returned by the query.\n- Include a section for stakeholders to review the implications of this change on data analysis and reporting.\n\n## Rationale\nThe change in the minimum salary threshold may significantly alter the query results, necessitating updates to documentation to ensure stakeholders are aware of the implications.\n\n## SQL Sanity Checks\n- No obvious syntax warnings\n",
+          "change_type": "Salary Threshold Update",
+          "impact_level": "medium",
+          "affected_objects": [],
+          "suggested_doc_updates": [
+            "Update the documentation to reflect the new minimum salary threshold of 100 instead of 30,000.",
+            "Add a note explaining the potential impact of this change on the results returned by the query.",
+            "Include a section for stakeholders to review the implications of this change on data analysis and reporting."
+          ],
+          "rationale": "The change in the minimum salary threshold may significantly alter the query results, necessitating updates to documentation to ensure stakeholders are aware of the implications."
+        },
+        {
+          "filename": "dml/select_department_risk_dashboard.sql",
+          "summary": "A new SQL script has been introduced to generate a comprehensive Department Performance and Risk Dashboard. This dashboard aggregates employee data across various departments, providing insights into employee status, salary distributions, and risk assessments based on recent performance metrics.",
+          "markdown": "## SQL Change Summary\n- **Change Type:** DML\n- **Impact Level:** medium\n\nA new SQL script has been introduced to generate a comprehensive Department Performance and Risk Dashboard. This dashboard aggregates employee data across various departments, providing insights into employee status, salary distributions, and risk assessments based on recent performance metrics.\n\n## Affected Objects\n- None detected\n\n## Suggested Documentation Updates\n- Add a section detailing the purpose and benefits of the Department Performance and Risk Dashboard.\n- Include a description of the data sources used in the dashboard, such as employees, departments, and employee_enriched_target.\n- Document the SQL script structure, including explanations of the CTEs (Common Table Expressions) and their roles in data aggregation.\n- Provide examples of the types of insights that can be derived from the dashboard, such as employee status, salary distributions, and risk assessments.\n- Update the user guide to include instructions on how to access and interpret the dashboard results.\n\n## Rationale\nThe documentation updates will enhance user understanding of the new dashboard's functionality, improve data transparency, and facilitate better decision-making based on the insights provided.\n\n## SQL Sanity Checks\n- No obvious syntax warnings\n",
+          "change_type": "DML",
+          "impact_level": "medium",
+          "affected_objects": [],
+          "suggested_doc_updates": [
+            "Add a section detailing the purpose and benefits of the Department Performance and Risk Dashboard.",
+            "Include a description of the data sources used in the dashboard, such as employees, departments, and employee_enriched_target.",
+            "Document the SQL script structure, including explanations of the CTEs (Common Table Expressions) and their roles in data aggregation.",
+            "Provide examples of the types of insights that can be derived from the dashboard, such as employee status, salary distributions, and risk assessments.",
+            "Update the user guide to include instructions on how to access and interpret the dashboard results."
+          ],
+          "rationale": "The documentation updates will enhance user understanding of the new dashboard's functionality, improve data transparency, and facilitate better decision-making based on the insights provided."
+        }
+      ],
+      "approval": {
+        "approved": true,
+        "source": "command",
+        "actor": "ask4anshuman",
+        "detail": "/approve-sql-doc",
+        "updated_at": "2026-04-26T19:52:39.768288+00:00"
+      },
+      "publication": {
+        "published": true,
+        "message": "Confluence pages published: 2",
+        "page_id": "5931034",
+        "title": "Technical Summary for - select_complex_enriched.sql",
+        "pages": [
+          {
+            "filename": "dml/select_complex_enriched.sql",
+            "page_id": "5931034",
+            "title": "Technical Summary for - select_complex_enriched.sql",
+            "url": "https://ask4anshuman.atlassian.net/wiki/pages/viewpage.action?pageId=5931034"
+          },
+          {
+            "filename": "dml/select_department_risk_dashboard.sql",
+            "page_id": "5898260",
+            "title": "Technical Summary for - select_department_risk_dashboard.sql",
+            "url": "https://ask4anshuman.atlassian.net/wiki/pages/viewpage.action?pageId=5898260"
+          }
+        ],
+        "updated_at": "2026-04-26T19:53:16.438954+00:00"
+      },
+      "created_at": "2026-04-26T19:51:54.679764+00:00",
+      "updated_at": "2026-04-26T19:53:16.438979+00:00"
     }
   }
 }
