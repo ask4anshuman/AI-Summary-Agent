@@ -824,6 +824,57 @@
       },
       "created_at": "2026-04-26T19:51:54.679764+00:00",
       "updated_at": "2026-04-26T19:53:16.438979+00:00"
+    },
+    "ask4anshuman/Agentic-SQL-Repo#14": {
+      "owner": "ask4anshuman",
+      "repo": "Agentic-SQL-Repo",
+      "pull_number": 14,
+      "head_sha": "55e64e3160d72edf2878a3f92826c9044c4a623a",
+      "modified_files": [
+        "dml/select_department_risk_dashboard.sql"
+      ],
+      "new_files": [],
+      "deleted_files": [],
+      "doc_payloads": [
+        {
+          "filename": "dml/select_department_risk_dashboard.sql",
+          "summary": "The SQL query for the department risk dashboard has been modified to change the condition for the active ratio percentage. The threshold has been increased from 40% to 400%, which may significantly alter the results returned by the query. This change could impact the visibility of departments that are considered at risk based on their active ratio.",
+          "markdown": "## SQL Change Summary\n- **Change Type:** Condition Update\n- **Impact Level:** medium\n\nThe SQL query for the department risk dashboard has been modified to change the condition for the active ratio percentage. The threshold has been increased from 40% to 400%, which may significantly alter the results returned by the query. This change could impact the visibility of departments that are considered at risk based on their active ratio.\n\n## Affected Objects\n- None detected\n\n## Suggested Documentation Updates\n- Update the documentation for the department risk dashboard to reflect the new active ratio percentage threshold of 400%.\n- Clarify the implications of the increased threshold on the visibility of departments categorized as at risk.\n- Revise any examples or use cases in the documentation that reference the previous threshold of 40% to ensure accuracy.\n\n## Rationale\nThe change in the active ratio percentage threshold from 40% to 400% significantly alters the criteria for identifying at-risk departments, necessitating updates to the documentation to prevent confusion and ensure users understand the new parameters.\n\n## SQL Sanity Checks\n- No obvious syntax warnings\n",
+          "change_type": "Condition Update",
+          "impact_level": "medium",
+          "affected_objects": [],
+          "suggested_doc_updates": [
+            "Update the documentation for the department risk dashboard to reflect the new active ratio percentage threshold of 400%.",
+            "Clarify the implications of the increased threshold on the visibility of departments categorized as at risk.",
+            "Revise any examples or use cases in the documentation that reference the previous threshold of 40% to ensure accuracy."
+          ],
+          "rationale": "The change in the active ratio percentage threshold from 40% to 400% significantly alters the criteria for identifying at-risk departments, necessitating updates to the documentation to prevent confusion and ensure users understand the new parameters."
+        }
+      ],
+      "approval": {
+        "approved": true,
+        "source": "command",
+        "actor": "ask4anshuman",
+        "detail": "/approve-sql-doc",
+        "updated_at": "2026-04-27T08:49:08.719156+00:00"
+      },
+      "publication": {
+        "published": true,
+        "message": "Confluence pages published: 1",
+        "page_id": "6422529",
+        "title": "Technical Summary for - select_department_risk_dashboard.sql",
+        "pages": [
+          {
+            "filename": "dml/select_department_risk_dashboard.sql",
+            "page_id": "6422529",
+            "title": "Technical Summary for - select_department_risk_dashboard.sql",
+            "url": "https://ask4anshuman.atlassian.net/wiki/pages/viewpage.action?pageId=6422529"
+          }
+        ],
+        "updated_at": "2026-04-27T08:51:00.209623+00:00"
+      },
+      "created_at": "2026-04-27T08:48:24.644445+00:00",
+      "updated_at": "2026-04-27T08:51:00.209636+00:00"
     }
   }
 }
