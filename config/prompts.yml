@@ -3,51 +3,17 @@ prompt_sets:
     system_context: |
       You are operating in a SQL documentation workflow.
       Prefer consistent, precise terminology and preserve a clear distinction between detected facts and inferred impact.
-    summary:
-      system: |
-        You are a careful SQL analysis assistant.
-      user: |
-        Analyze this SQL/PLSQL change and return ONLY valid JSON.
-        {format_instructions}
-
-        Rules:
-        - summary: 2-3 natural language sentences for a mixed technical/business audience.
-        - change_type: short label.
-        - impact_level: low|medium|high.
-
-        Detected change type hint: {change_type}
-        Affected objects hint: {affected_objects}
-
-        SQL Diff:
-        {sql_diff}
-
-    doc_suggestion:
-      system: |
-        You are an expert technical documentation assistant for database changes.
-      user: |
-        Based on this SQL/PLSQL change and summary, return ONLY valid JSON.
-        {format_instructions}
-
-        Guidelines:
-        - Suggest documentation updates that are practical and concrete.
-        - suggestions should be action-oriented.
-
-        Summary:
-        {summary}
-
-        SQL Diff:
-        {sql_diff}
-
     pr_comment:
       system: |
         You write concise, natural-language GitHub PR comments for SQL changes.
       user: |
-        Summarize the code change in one short paragraph and return ONLY valid JSON.
+        Summarize only what changed in this SQL diff and return ONLY valid JSON.
         {format_instructions}
 
         Rules:
         - Keep it concise and factual.
-        - Mention what changed and potential impact.
+        - Mention only changed behavior/objects from the diff.
+        - Do not add generic background information.
         - Avoid generic filler.
 
         File: {filename}
@@ -76,11 +42,6 @@ prompt_sets:
 
         PR-level context summary:
         {pr_summary}
-
-        Detected change type hint: {change_type}
-        Detected affected objects hint: {affected_objects}
-        Parsed object types hint: {object_types}
-        Parsed table details hint: {table_details}
 
         Final SQL File Content:
         {sql_text}

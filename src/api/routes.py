@@ -40,14 +40,6 @@ from src.tools.git_tools import (
 )
 from src.tools.llm_tools import LLMClient
 from src.tools.approval_store import ApprovalStateStore
-from src.tools.sql_parser import (
-    detect_change_type,
-    extract_affected_objects,
-    extract_filter_details,
-    extract_join_details,
-    extract_object_types,
-    extract_table_details,
-)
 
 router = APIRouter()
 approval_store = ApprovalStateStore(settings.approval_state_file)
@@ -251,14 +243,12 @@ def update_repo_prompts(owner: str, repo: str, request: dict[str, Any]) -> dict[
     
     Endpoint: PUT /repos/{owner}/{repo}/prompts
     
-    Request body: JSON object where keys are prompt_set names and values are 
-    RepoPromptSet objects (with summary, doc_suggestion, pr_comment, publish keys).
+    Request body: JSON object where keys are prompt_set names and values are
+    RepoPromptSet objects (with pr_comment and publish keys).
     
     Example:
     {
       "analytics-custom": {
-        "summary": {"system": "...", "user": "..."},
-        "doc_suggestion": {"system": "...", "user": "..."},
         "pr_comment": {"system": "...", "user": "..."},
         "publish": {"system": "...", "user": "..."}
       }
@@ -870,22 +860,11 @@ def _summarize_github_sql_change(change: GithubPRSQLFileChange, runtime: Runtime
     patch_or_note = change.patch or "(Patch omitted by GitHub API payload for this file.)"
     diff = f"# File: {change.filename}\n{patch_or_note}"
     result = _run_orchestrator(runtime=runtime, diff=diff)
-    pr_summary = _build_runtime_llm_client(runtime).summarize_pr_change(
-        filename=change.filename,
-        status=change.status,
-        previous_filename=change.previous_filename,
-        sql_diff=patch_or_note,
-    )
-    short_summary = _to_pr_safe_summary(pr_summary.summary, runtime=runtime)
+    short_summary = _to_pr_safe_summary(result.summary, runtime=runtime)
     doc_payload = PRFileDocPayload(
         filename=change.filename,
         summary=result.summary,
         markdown=result.markdown,
-        change_type=result.change_type,
-        impact_level=result.impact_level,
-        affected_objects=result.affected_objects,
-        suggested_doc_updates=result.suggested_doc_updates,
-        rationale=result.rationale,
     )
     return short_summary, doc_payload
 
@@ -1058,19 +1037,9 @@ def _generate_publish_sql_doc(
     pr_summary: str,
     runtime: RuntimeConfig,
 ) -> PublishedSQLDocPayload:
-    change_type = detect_change_type(sql_text)
-    affected_objects = extract_affected_objects(sql_text)
-    object_types = extract_object_types(sql_text)
-    table_details = extract_table_details(sql_text)
-    join_details = extract_join_details(sql_text)
-    filter_details = extract_filter_details(sql_text)
     response = _build_runtime_llm_client(runtime).generate_publish_doc(
         sql_text=sql_text,
         pr_summary=pr_summary,
-        change_type=change_type,
-        affected_objects=affected_objects,
-        object_types=object_types,
-        table_details=table_details,
     )
 
     return PublishedSQLDocPayload(

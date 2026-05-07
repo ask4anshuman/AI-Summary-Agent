@@ -18,11 +18,6 @@ class SummarizeRequest(BaseModel):
 
 class AgentResult(BaseModel):
     summary: str
-    change_type: str
-    impact_level: str
-    affected_objects: list[str]
-    suggested_doc_updates: list[str]
-    rationale: str
     markdown: str
 
 
@@ -41,11 +36,6 @@ class PRFileDocPayload(BaseModel):
     filename: str
     summary: str
     markdown: str
-    change_type: str
-    impact_level: str
-    affected_objects: list[str]
-    suggested_doc_updates: list[str]
-    rationale: str
 
 
 class PublishedSQLDocPayload(BaseModel):
@@ -94,10 +84,8 @@ class RepoConfluenceConfig(BaseModel):
 
 
 class RepoPromptSet(BaseModel):
-    """Custom prompt set definition. Contains system and user templates for 4 LLM operations."""
+    """Custom prompt set definition. Contains system and user templates for 2 LLM operations."""
     system_context: str = ""
-    summary: dict[str, str] = Field(default_factory=lambda: {"system": "", "user": ""})
-    doc_suggestion: dict[str, str] = Field(default_factory=lambda: {"system": "", "user": ""})
     pr_comment: dict[str, str] = Field(default_factory=lambda: {"system": "", "user": ""})
     publish: dict[str, str] = Field(default_factory=lambda: {"system": "", "user": ""})
 

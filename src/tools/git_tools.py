@@ -58,16 +58,6 @@ def _normalize_github_file_status(status: str) -> str:
     return normalized
 
 
-def extract_sql_patches_from_github_pr_files(pr_files_payload: list[dict[str, Any]]) -> list[str]:
-    patches: list[str] = []
-    for file_item in pr_files_payload:
-        filename = file_item.get("filename", "")
-        patch = file_item.get("patch", "")
-        if _looks_like_sql_file(filename) and patch:
-            patches.append(f"# File: {filename}\n{patch}")
-    return patches
-
-
 def extract_sql_file_changes_from_github_pr_files(pr_files_payload: list[dict[str, Any]]) -> list[GithubPRSQLFileChange]:
     changes: list[GithubPRSQLFileChange] = []
     for file_item in pr_files_payload:
@@ -103,25 +93,6 @@ def fetch_github_pr_sql_file_changes(
     response.raise_for_status()
     files_payload = response.json()
     return extract_sql_file_changes_from_github_pr_files(files_payload)
-
-
-def fetch_github_pr_sql_patches(
-    api_base_url: str,
-    token: str,
-    owner: str,
-    repo: str,
-    pull_number: int,
-    timeout: int = 20,
-) -> list[str]:
-    file_changes = fetch_github_pr_sql_file_changes(
-        api_base_url=api_base_url,
-        token=token,
-        owner=owner,
-        repo=repo,
-        pull_number=pull_number,
-        timeout=timeout,
-    )
-    return [f"# File: {change.filename}\n{change.patch}" for change in file_changes if change.patch]
 
 
 def fetch_github_file_content(

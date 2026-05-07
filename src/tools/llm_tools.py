@@ -21,17 +21,6 @@ class LLMInvocationError(RuntimeError):
     pass
 
 
-class SummaryOutput(BaseModel):
-    summary: str
-    change_type: str
-    impact_level: str
-
-
-class DocSuggestionOutput(BaseModel):
-    suggested_doc_updates: list[str]
-    rationale: str
-
-
 class PRCommentOutput(BaseModel):
     summary: str
 
@@ -95,27 +84,6 @@ class LLMClient:
     def enabled(self) -> bool:
         return True
 
-    def summarize_sql(self, *, sql_diff: str, change_type: str, affected_objects: list[str]) -> SummaryOutput:
-        return self._invoke_structured(
-            prompt_key="summary",
-            variables={
-                "sql_diff": sql_diff,
-                "change_type": change_type,
-                "affected_objects": ", ".join(affected_objects) if affected_objects else "None detected",
-            },
-            output_model=SummaryOutput,
-        )
-
-    def suggest_doc_updates(self, *, sql_diff: str, summary: str) -> DocSuggestionOutput:
-        return self._invoke_structured(
-            prompt_key="doc_suggestion",
-            variables={
-                "sql_diff": sql_diff,
-                "summary": summary,
-            },
-            output_model=DocSuggestionOutput,
-        )
-
     def summarize_pr_change(
         self,
         *,
@@ -140,20 +108,12 @@ class LLMClient:
         *,
         sql_text: str,
         pr_summary: str,
-        change_type: str,
-        affected_objects: list[str],
-        object_types: list[str],
-        table_details: list[str],
     ) -> PublishOutput:
         return self._invoke_structured(
             prompt_key="publish",
             variables={
                 "sql_text": sql_text,
                 "pr_summary": pr_summary or "No PR-level summary available.",
-                "change_type": change_type,
-                "affected_objects": ", ".join(affected_objects) if affected_objects else "None detected",
-                "object_types": ", ".join(object_types) if object_types else "UNKNOWN",
-                "table_details": ", ".join(table_details) if table_details else "None detected",
             },
             output_model=PublishOutput,
         )

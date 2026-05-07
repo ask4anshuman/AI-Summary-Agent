@@ -175,11 +175,6 @@ def test_github_webhook_creates_sticky_summary_for_modified_sql(client: TestClie
         {
             "summary": "The query now selects explicit order columns for reporting. " * 20,
             "markdown": "## SQL Change Summary\nExample",
-            "change_type": "DML",
-            "impact_level": "medium",
-            "affected_objects": ["orders"],
-            "suggested_doc_updates": ["Release notes"],
-            "rationale": "Columns changed",
         },
     )()
     routes._upsert_github_pr_comment = lambda **kwargs: captured.update({"markdown": kwargs["markdown"]})
@@ -202,7 +197,7 @@ def test_github_webhook_creates_sticky_summary_for_modified_sql(client: TestClie
     assert response.status_code == 200
     assert "## SQL PR Summary" in captured["markdown"]
     assert "db/orders.sql" in captured["markdown"]
-    assert "mocked concise pr summary" in captured["markdown"].lower()
+    assert "the query now selects explicit order columns" in captured["markdown"].lower()
     assert stored["modified_files"] == ["db/orders.sql"]
     assert isinstance(stored["doc_payloads"], list)
     assert len(stored["doc_payloads"]) == 1
@@ -230,11 +225,6 @@ def test_github_webhook_posts_merge_note_for_new_sql_files(client: TestClient) -
         {
             "summary": "Mock summary",
             "markdown": "## SQL Change Summary\nExample",
-            "change_type": "DDL",
-            "impact_level": "medium",
-            "affected_objects": ["new_feature"],
-            "suggested_doc_updates": ["Release notes"],
-            "rationale": "Columns changed",
         },
     )()
     routes._upsert_github_pr_comment = lambda **kwargs: captured.update({"markdown": kwargs["markdown"]})
@@ -256,7 +246,7 @@ def test_github_webhook_posts_merge_note_for_new_sql_files(client: TestClient) -
 
     assert response.status_code == 200
     assert called["run"] == 1
-    assert "mocked concise pr summary" in captured["markdown"].lower()
+    assert "mock summary" in captured["markdown"].lower()
     assert stored["new_files"] == ["db/new_feature.sql"]
     assert "### Documentation Status" in captured["markdown"]
     assert "Publish after merged" in captured["markdown"]
@@ -285,11 +275,6 @@ def test_github_webhook_posts_delete_note_for_deleted_sql_files(client: TestClie
         {
             "summary": "Mock summary",
             "markdown": "## SQL Change Summary\nExample",
-            "change_type": "DDL",
-            "impact_level": "medium",
-            "affected_objects": ["legacy_cleanup"],
-            "suggested_doc_updates": ["Release notes"],
-            "rationale": "Delete table",
         },
     )()
     routes._upsert_github_pr_comment = lambda **kwargs: captured.update({"markdown": kwargs["markdown"]})
@@ -320,7 +305,7 @@ def test_github_webhook_posts_delete_note_for_deleted_sql_files(client: TestClie
     assert called["run"] == 1
     assert "### Deleted SQL Files" in captured["markdown"]
     assert "db/legacy_cleanup.sql" in captured["markdown"]
-    assert "mocked concise pr summary" in captured["markdown"].lower()
+    assert "mock summary" in captured["markdown"].lower()
     assert "Confluence" in captured["markdown"]
     assert "pageId=11" in captured["markdown"]
     assert "Deleted or moved will be added after Published." in captured["markdown"]

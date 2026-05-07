@@ -11,7 +11,7 @@ class _SimpleOutput(BaseModel):
 def test_prompt_store_returns_default_system_context() -> None:
     store = PromptStore(prompts_file="c:/Users/ANSHUMAN/AI-Summary-Agent/config/prompts.yml")
 
-    prompt = store.get_prompt("ask4anshuman-agentic-sql-repo", "summary")
+    prompt = store.get_prompt("ask4anshuman-agentic-sql-repo", "pr_comment")
 
     assert prompt["system_context"]
     assert "SQL documentation workflow" in prompt["system_context"]
@@ -22,12 +22,12 @@ def test_prompt_store_prefers_repo_system_context() -> None:
         repo_prompts={
             "ask4anshuman-agentic-sql-repo": {
                 "system_context": "Repo-specific context",
-                "summary": {"system": "Repo system", "user": "Repo user"},
+                "pr_comment": {"system": "Repo system", "user": "Repo user"},
             }
         }
     )
 
-    prompt = store.get_prompt("ask4anshuman-agentic-sql-repo", "summary")
+    prompt = store.get_prompt("ask4anshuman-agentic-sql-repo", "pr_comment")
 
     assert prompt["system_context"] == "Repo-specific context"
     assert prompt["system"] == "Repo system"
@@ -80,7 +80,7 @@ def test_prompt_store_requires_explicit_prompt_set() -> None:
     store = PromptStore(prompts_file="c:/Users/ANSHUMAN/AI-Summary-Agent/config/prompts.yml")
 
     try:
-        store.get_prompt("", "summary")
+        store.get_prompt("", "pr_comment")
     except ValueError as exc:
         assert "Prompt set is required" in str(exc)
     else:  # pragma: no cover - defensive assertion

@@ -10,10 +10,6 @@ def test_orchestrator_run_returns_agent_result() -> None:
         current_sql="create table dept(id int, name varchar(50));"
     )
     assert result.summary
-    assert result.change_type
-    assert result.impact_level
-    assert isinstance(result.affected_objects, list)
-    assert isinstance(result.suggested_doc_updates, list)
     assert result.markdown.startswith("## SQL Change Summary")
 
 

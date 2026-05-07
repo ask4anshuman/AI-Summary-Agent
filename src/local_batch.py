@@ -24,7 +24,7 @@ def process_sql_directory(input_dir: Path, output_dir: Path) -> list[Path]:
         output_path = output_dir / f"{sql_file.stem}.json"
         output_payload = {
             "input_file": sql_file.name,
-            "llm_enabled": orchestrator.summarizer.llm_client.enabled,
+            "llm_enabled": orchestrator.llm_client.enabled,
             "result": result.model_dump(),
         }
         output_path.write_text(json.dumps(output_payload, indent=2), encoding="utf-8")
