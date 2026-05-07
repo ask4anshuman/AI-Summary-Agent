@@ -13,8 +13,8 @@ repos:
       api_key: ${LLM_API_KEY_ASK4ANSHUMAN_AGENTIC_SQL_REPO}
       base_url: https://api.openai.com/v1
       model: gpt-4o-mini
-      temperature: 0.1
-      pr_summary_max_chars: 280
+      temperature: 0
+      pr_summary_max_chars: 300
       prompt_set: ask4anshuman-agentic-sql-repo
     confluence:
       base_url: https://ask4anshuman.atlassian.net/wiki

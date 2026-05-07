@@ -33,7 +33,6 @@ from src.tools.repo_registry import RepoRegistryStore
 from src.tools.confluence_tools import ConfluencePublisher
 from src.tools.git_tools import (
     GithubPRSQLFileChange,
-    fetch_bitbucket_pr_sql_patches,
     fetch_github_file_content,
     fetch_github_file_content_with_sha,
     fetch_github_pr_sql_file_changes,
@@ -123,15 +122,19 @@ def _run_orchestrator(
     return orchestrator.run(previous_sql=previous_sql, current_sql=current_sql, diff=diff)
 
 
-def _build_runtime_config(payload: dict[str, Any]) -> RuntimeConfig:
+def _build_runtime_config(payload: dict[str, Any], require_registered_repo: bool = False) -> RuntimeConfig:
     runtime = _default_runtime_config()
     repository = payload.get("repository", {})
     full_name = str(repository.get("full_name", "")).strip().lower()
     if not full_name or "/" not in full_name:
+        if require_registered_repo:
+            raise HTTPException(status_code=400, detail="Invalid or missing repository.full_name in payload")
         return runtime
 
     repo_config = repo_registry.get_repo(full_name)
     if not repo_config:
+        if require_registered_repo:
+            raise HTTPException(status_code=404, detail=f"Repository registration not found: {full_name}")
         return runtime
 
     github_cfg = repo_config.get("github", {}) if isinstance(repo_config.get("github", {}), dict) else {}
@@ -139,14 +142,17 @@ def _build_runtime_config(payload: dict[str, Any]) -> RuntimeConfig:
     confluence_cfg = repo_config.get("confluence", {}) if isinstance(repo_config.get("confluence", {}), dict) else {}
     repo_prompts_cfg = repo_config.get("prompts", {}) if isinstance(repo_config.get("prompts", {}), dict) else {}
 
-    confluence_runtime = ConfluencePublisher(
-        base_url=str(confluence_cfg.get("base_url", runtime.confluence.base_url)).strip(),
-        space_key=str(confluence_cfg.get("space", runtime.confluence.space_key)).strip(),
-        username=str(confluence_cfg.get("username", runtime.confluence.username)).strip(),
-        api_token=str(confluence_cfg.get("api_token", runtime.confluence.api_token)).strip(),
-        parent_page_id=str(confluence_cfg.get("default_parent_page_id", runtime.confluence.parent_page_id)).strip(),
-        path_mappings=confluence_cfg.get("path_mappings", []) if isinstance(confluence_cfg.get("path_mappings", []), list) else [],
-    )
+    if confluence_cfg:
+        confluence_runtime = ConfluencePublisher(
+            base_url=str(confluence_cfg.get("base_url", runtime.confluence.base_url)).strip(),
+            space_key=str(confluence_cfg.get("space", runtime.confluence.space_key)).strip(),
+            username=str(confluence_cfg.get("username", runtime.confluence.username)).strip(),
+            api_token=str(confluence_cfg.get("api_token", runtime.confluence.api_token)).strip(),
+            parent_page_id=str(confluence_cfg.get("default_parent_page_id", runtime.confluence.parent_page_id)).strip(),
+            path_mappings=confluence_cfg.get("path_mappings", []) if isinstance(confluence_cfg.get("path_mappings", []), list) else [],
+        )
+    else:
+        confluence_runtime = runtime.confluence
 
     return RuntimeConfig(
         repo_identifier=full_name,
@@ -291,7 +297,7 @@ def republish_pr(owner: str, repo: str, pull_number: int) -> WebhookResponse:
     if not bool(approval.get("approved", False)):
         raise HTTPException(status_code=409, detail="PR has not been approved; publish skipped")
 
-    runtime = _build_runtime_config({"repository": {"full_name": f"{owner}/{repo}"}})
+    runtime = _build_runtime_config({"repository": {"full_name": f"{owner}/{repo}"}}, require_registered_repo=True)
     if not runtime.confluence.enabled:
         raise HTTPException(status_code=409, detail="Confluence is not configured for this repository")
 
@@ -338,7 +344,7 @@ async def github_webhook(request: Request) -> WebhookResponse:
     except json.JSONDecodeError as exc:
         raise HTTPException(status_code=400, detail="Invalid JSON payload") from exc
 
-    runtime = _build_runtime_config(payload)
+    runtime = _build_runtime_config(payload, require_registered_repo=True)
     _validate_github_signature(request=request, raw_body=raw_body, webhook_secret=runtime.github_webhook_secret)
 
     event_name = request.headers.get("X-GitHub-Event", "pull_request")
@@ -557,31 +563,6 @@ def _handle_github_pull_request_review_event(payload: dict[str, Any], runtime: R
         detail=state,
     )
     return WebhookResponse(ok=True, message="Approval state updated from PR review")
-
-
-@router.post("/bitbucket-webhook", response_model=WebhookResponse)
-def bitbucket_webhook(payload: dict[str, Any]) -> WebhookResponse:
-    pull_request = payload.get("pullrequest", {})
-    links = pull_request.get("links", {})
-    diff_url = links.get("diff", {}).get("href", "")
-
-    patches: list[str] = []
-    if diff_url and settings.bitbucket_token:
-        patches = fetch_bitbucket_pr_sql_patches(
-            api_base_url=settings.bitbucket_api_base_url,
-            token=settings.bitbucket_token,
-            pr_url=diff_url,
-        )
-
-    if not patches:
-        return WebhookResponse(ok=True, message="No SQL changes found in Bitbucket PR")
-
-    combined_diff = "\n\n".join(patches)
-    runtime = _default_runtime_config()
-    result = _run_orchestrator(runtime=runtime, diff=combined_diff)
-
-    _post_bitbucket_pr_comment(payload=payload, markdown=result.markdown)
-    return WebhookResponse(ok=True, message="Bitbucket webhook processed", markdown=result.markdown)
 
 
 @router.post("/demo")
@@ -1177,23 +1158,6 @@ def _extract_github_issue_identity(payload: dict[str, Any]) -> tuple[str, str, i
 def _extract_github_actor(payload: dict[str, Any]) -> str:
     login = str(payload.get("sender", {}).get("login", "")).strip()
     return login or "unknown"
-
-
-def _post_bitbucket_pr_comment(payload: dict[str, Any], markdown: str) -> None:
-    if not settings.bitbucket_token:
-        return
-
-    links = payload.get("pullrequest", {}).get("links", {})
-    comments_url = links.get("comments", {}).get("href", "")
-    if not comments_url:
-        return
-
-    headers = {"Authorization": f"Bearer {settings.bitbucket_token}", "Content-Type": "application/json"}
-    body = {"content": {"raw": markdown}}
-    try:
-        requests.post(comments_url, headers=headers, json=body, timeout=20)
-    except requests.RequestException:
-        return
 
 
 def _validate_github_signature(request: Request, raw_body: bytes, webhook_secret: str = "") -> None:

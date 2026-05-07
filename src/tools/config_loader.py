@@ -1,7 +1,7 @@
 # Purpose : YAML config file loader with environment variable resolution.
 #           Reads a YAML file, recursively replaces ${VAR_NAME} references with their environment
 #           variable values, and provides a helper to navigate nested config by dotted key path.
-# Called by: src/config.py (loads config/agent.yml on startup),
+# Called by: src/config.py (loads config/registered_repos.yml on startup),
 #            src/tools/repo_registry.py (resolve_env_vars on registry reads).
 
 import os
@@ -43,14 +43,14 @@ def load_yaml_config(file_path: str) -> dict[str, Any]:
     return resolve_env_vars(parsed)
 
 
-def get_nested_config_value(config: dict[str, Any], dotted_path: str, default: Any = None) -> Any:
+def get_nested_config_value(config: dict[str, Any], dotted_path: str, fallback: Any = None) -> Any:
     if not dotted_path:
-        return default
+        return fallback
 
     current: Any = config
     for part in dotted_path.split("."):
         if not isinstance(current, dict) or part not in current:
-            return default
+            return fallback
         current = current[part]
 
     return current

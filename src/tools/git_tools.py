@@ -124,32 +124,6 @@ def fetch_github_pr_sql_patches(
     return [f"# File: {change.filename}\n{change.patch}" for change in file_changes if change.patch]
 
 
-def fetch_bitbucket_pr_sql_patches(api_base_url: str, token: str, pr_url: str, timeout: int = 20) -> list[str]:
-    headers = {"Authorization": f"Bearer {token}"}
-    response = requests.get(pr_url, headers=headers, timeout=timeout)
-    response.raise_for_status()
-    payload = response.json()
-
-    values = payload.get("values", [])
-    patches: list[str] = []
-    for item in values:
-        old_path = item.get("old", {}).get("path", "")
-        new_path = item.get("new", {}).get("path", "")
-        path = new_path or old_path
-        if not _looks_like_sql_file(path):
-            continue
-
-        diff_link = item.get("links", {}).get("diff", {}).get("href", "")
-        if not diff_link:
-            continue
-
-        diff_resp = requests.get(diff_link, headers=headers, timeout=timeout)
-        diff_resp.raise_for_status()
-        patches.append(f"# File: {path}\n{diff_resp.text}")
-
-    return patches
-
-
 def fetch_github_file_content(
     api_base_url: str,
     token: str,

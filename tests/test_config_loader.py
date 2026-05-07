@@ -2,7 +2,7 @@ from src.tools.config_loader import get_nested_config_value, load_yaml_config
 
 
 def test_load_yaml_config_returns_mapping(tmp_path) -> None:
-    cfg = tmp_path / "agent.yml"
+    cfg = tmp_path / "registered_repos.yml"
     cfg.write_text(
         """
 llm:

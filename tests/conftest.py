@@ -21,7 +21,7 @@ def client() -> TestClient:
 def mock_llm(monkeypatch: pytest.MonkeyPatch) -> None:
     object.__setattr__(settings, "openai_api_key", "test-key")
     object.__setattr__(settings, "openai_model", "gpt-4o-mini")
-    object.__setattr__(settings, "openai_prompt_set", "default")
+    object.__setattr__(settings, "openai_prompt_set", "ask4anshuman-agentic-sql-repo")
 
     monkeypatch.setattr(
         LLMClient,

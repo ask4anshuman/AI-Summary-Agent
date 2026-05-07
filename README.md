@@ -1,6 +1,6 @@
 # AI SQL Summary Agent
 
-Analyze SQL and PL/SQL changes, generate natural language summaries, suggest documentation updates, and publish to Confluence. Deploy as a service with GitHub/Bitbucket webhooks, or use via API.
+Analyze SQL and PL/SQL changes, generate natural language summaries, suggest documentation updates, and publish to Confluence. Deploy as a service with GitHub webhooks, or use via API.
 
 **✨ Key Features:** Multi-tenant setup, per-repo custom prompts (zero code changes), LangChain + OpenAI integration, automatic PR comments, GitHub approval workflow, Confluence publishing.
 
@@ -11,7 +11,7 @@ Analyze SQL and PL/SQL changes, generate natural language summaries, suggest doc
 ### 1. Prerequisites
 - Python 3.10+
 - OpenAI API key (or compatible LLM endpoint)
-- GitHub/Bitbucket (for webhook integration)
+- GitHub (for webhook integration)
 - Confluence (for documentation publishing)
 
 ### 2. Setup
@@ -60,7 +60,7 @@ curl -X POST http://localhost:8000/repos/register \
       "api_key": "sk-...",
       "model": "gpt-4",
       "temperature": 0.1,
-      "prompt_set": "default"
+      "prompt_set": "ask4anshuman-agentic-sql-repo"
     },
     "confluence": {
       "base_url": "https://myorg.atlassian.net/wiki",
@@ -78,7 +78,7 @@ curl -X POST http://localhost:8000/repos/register \
 - **PUT** `/repos/{owner}/{repo}` - Update full registration
 - **DELETE** `/repos/{owner}/{repo}` - Delete registration
 
-Registrations are stored in `config/agent.yml` under `repos:` section.
+Registrations are stored in `config/registered_repos.yml` under `repos:` section.
 
 ---
 
@@ -86,7 +86,7 @@ Registrations are stored in `config/agent.yml` under `repos:` section.
 
 ### Problem Solved
 Before: Custom prompts required editing `config/prompts.yml` and redeploying code.  
-After: Custom prompts are provided during registration, stored per-repo in `config/agent.yml`.
+After: Custom prompts are provided during registration, stored per-repo in `config/registered_repos.yml`.
 
 ### Register with Custom Prompts
 
@@ -158,7 +158,7 @@ Each prompt set requires **4 prompt types**: `summary`, `doc_suggestion`, `pr_co
 ### Prompt Resolution
 
 ```
-1. Check repo-specific prompts (from config/agent.yml)
+1. Check repo-specific prompts (from config/registered_repos.yml)
 2. If found → use that
 3. If not found → fall back to default prompts (from config/prompts.yml)
 4. If still not found → raise error
@@ -266,12 +266,12 @@ src/
     llm_tools.py         # LangChain LLM service (ChatOpenAI)
     prompt_store.py      # Prompt registry (repo + defaults)
     sql_parser.py        # SQL parsing & analysis
-    git_tools.py         # GitHub/Bitbucket API helpers
+    git_tools.py         # GitHub API helpers
     confluence_tools.py  # Confluence publishing
     repo_registry.py     # YAML-based repo storage
     approval_store.py    # Approval state tracking
 config/
-  agent.yml              # Repo registrations
+  registered_repos.yml   # Repo registrations
   prompts.yml            # Default prompt templates
 tests/                   # pytest test suite (38 tests, all passing)
 ```
@@ -363,7 +363,7 @@ OPENAI_API_KEY              # Required
 OPENAI_BASE_URL             # Default: https://api.openai.com/v1
 OPENAI_MODEL                # Default: gpt-4o-mini
 OPENAI_TEMPERATURE          # Default: 0.1
-OPENAI_PROMPT_SET           # Default: default
+OPENAI_PROMPT_SET           # Default: ask4anshuman-agentic-sql-repo
 ```
 
 ### GitHub
@@ -384,27 +384,21 @@ CONFLUENCE_USERNAME         # Bot username
 CONFLUENCE_API_TOKEN        # Confluence API token
 ```
 
-### Bitbucket (optional)
-```
-BITBUCKET_API_BASE_URL      # Default: https://api.bitbucket.org/2.0
-BITBUCKET_TOKEN             # Personal access token
-```
-
 ### App Configuration
 ```
 APP_HOST                    # Default: 0.0.0.0
 APP_PORT                    # Default: 8000
-APP_CONFIG_FILE             # Default: config/agent.yml
+APP_CONFIG_FILE             # Default: config/registered_repos.yml
 PROMPTS_FILE                # Default: config/prompts.yml
 APPROVAL_STATE_FILE         # Default: .ai_sql_agent/approval_state.json
-REPO_REGISTRY_FILE          # Default: config/agent.yml
+REPO_REGISTRY_FILE          # Default: config/registered_repos.yml
 ```
 
 ---
 
 ## Configuration Files
 
-### config/agent.yml
+### config/registered_repos.yml
 YAML registry of repositories:
 ```yaml
 repos:
@@ -417,7 +411,7 @@ repos:
     llm:
       api_key: ${LLM_API_KEY_...}
       model: gpt-4
-      prompt_set: default
+      prompt_set: ask4anshuman-agentic-sql-repo
     confluence:
       base_url: https://...
       space: SQLDB
@@ -504,7 +498,7 @@ pytest -q          # Quiet output
 
 ### Custom Prompts Not Being Used
 1. Check repo is registered with custom `prompt_set`
-2. Verify `config/agent.yml` has `prompts` section
+2. Verify `config/registered_repos.yml` has `prompts` section
 3. Ensure all 4 prompt types defined: summary, doc_suggestion, pr_comment, publish
 4. Check for typos in variable names: `{sql_diff}`, `{format_instructions}`, etc.
 
@@ -516,7 +510,7 @@ pytest -q          # Quiet output
 ### Webhook Not Triggering
 1. Verify GitHub webhook URL points to `/github-webhook` endpoint
 2. Check `GITHUB_WEBHOOK_SECRET` matches GitHub webhook secret
-3. Confirm repo is registered in `config/agent.yml`
+3. Confirm repo is registered in `config/registered_repos.yml`
 
 ---
 

@@ -1,10 +1,45 @@
 import hashlib
 import hmac
 
+import pytest
 from fastapi.testclient import TestClient
 
 from src.api import routes
 from src.tools.git_tools import GithubPRSQLFileChange
+
+
+@pytest.fixture(autouse=True)
+def _mock_registered_repo(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(routes.confluence_publisher, "base_url", "https://wiki.example.com")
+    monkeypatch.setattr(routes.confluence_publisher, "space_key", "SQL")
+    monkeypatch.setattr(routes.confluence_publisher, "username", "bot@example.com")
+    monkeypatch.setattr(routes.confluence_publisher, "api_token", "token")
+
+    def _get_repo(full_name: str):
+        if full_name == "team/repo":
+            return {
+                "repo": "team/repo",
+                "github": {
+                    "owner": "team",
+                    "name": "repo",
+                    "api_base_url": "https://api.github.com",
+                    "token": "test-token",
+                    "webhook_secret": "",
+                    "approval_command": "/approve-sql-doc",
+                    "approval_label": "sql-doc-approved",
+                },
+                "llm": {
+                    "api_key": "test-key",
+                    "base_url": "https://api.openai.com/v1",
+                    "model": "gpt-4o-mini",
+                    "temperature": 0.1,
+                    "prompt_set": "ask4anshuman-agentic-sql-repo",
+                    "pr_summary_max_chars": 280,
+                },
+            }
+        return None
+
+    monkeypatch.setattr(routes.repo_registry, "get_repo", _get_repo)
 
 
 def _github_signature(secret: str, payload: bytes) -> str:
@@ -40,6 +75,19 @@ def test_github_webhook_no_sql_changes_without_provider_config(client: TestClien
 
     assert response.status_code == 200
     assert response.json()["ok"] is True
+
+
+def test_github_webhook_rejects_unregistered_repo(client: TestClient) -> None:
+    payload = {
+        "action": "opened",
+        "pull_request": {"number": 123},
+        "repository": {"full_name": "unknown/repo"},
+    }
+
+    response = client.post("/github-webhook", json=payload)
+
+    assert response.status_code == 404
+    assert "Repository registration not found" in response.json()["detail"]
 
 
 def test_github_webhook_rejects_missing_signature_when_secret_configured(client: TestClient) -> None:
@@ -605,14 +653,3 @@ def test_ensure_confluence_link_at_fourth_line_updates_existing_line() -> None:
     assert lines[4] == "select 1;"
 
 
-def test_bitbucket_webhook_no_sql_changes(client: TestClient) -> None:
-    payload = {
-        "pullrequest": {
-            "links": {
-                "diff": {"href": ""}
-            }
-        }
-    }
-    response = client.post("/bitbucket-webhook", json=payload)
-    assert response.status_code == 200
-    assert response.json()["ok"] is True

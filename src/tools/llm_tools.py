@@ -74,13 +74,15 @@ class LLMClient:
         self.base_url = _normalize_openai_base_url(base_url or settings.openai_base_url)
         self.model = (model or settings.openai_model).strip()
         self.temperature = settings.openai_temperature if temperature is None else float(temperature)
-        self.prompt_set = (prompt_set or settings.openai_prompt_set or "default").strip()
+        self.prompt_set = (prompt_set or settings.openai_prompt_set).strip()
         self.prompt_store = prompt_store or PromptStore(repo_prompts=repo_prompts or {})
 
         if not self.api_key:
             raise LLMConfigurationError("LLM API key is required. Configure llm.api_key (or OPENAI_API_KEY).")
         if not self.model:
             raise LLMConfigurationError("LLM model is required. Configure llm.model (or OPENAI_MODEL).")
+        if not self.prompt_set:
+            raise LLMConfigurationError("LLM prompt set is required. Configure llm.prompt_set (or OPENAI_PROMPT_SET).")
 
         self._chat = ChatOpenAI(
             api_key=self.api_key,
@@ -159,12 +161,16 @@ class LLMClient:
     def _invoke_structured(self, *, prompt_key: str, variables: dict[str, Any], output_model: type[BaseModel]) -> Any:
         parser = PydanticOutputParser(pydantic_object=output_model)
         prompt_cfg = self.prompt_store.get_prompt(self.prompt_set, prompt_key)
-        prompt = ChatPromptTemplate.from_messages(
+        prompt_messages: list[tuple[str, str]] = []
+        if prompt_cfg.get("system_context", "").strip():
+            prompt_messages.append(("system", prompt_cfg["system_context"]))
+        prompt_messages.extend(
             [
                 ("system", prompt_cfg["system"]),
                 ("user", prompt_cfg["user"]),
             ]
         )
+        prompt = ChatPromptTemplate.from_messages(prompt_messages)
 
         final_vars = {**variables, "format_instructions": parser.get_format_instructions()}
 

@@ -1,5 +1,8 @@
 prompt_sets:
-  default:
+  ask4anshuman-agentic-sql-repo:
+    system_context: |
+      You are operating in a SQL documentation workflow.
+      Prefer consistent, precise terminology and preserve a clear distinction between detected facts and inferred impact.
     summary:
       system: |
         You are a careful SQL analysis assistant.

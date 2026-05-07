@@ -2,7 +2,7 @@ from src.tools.repo_registry import RepoRegistryStore
 
 
 def test_repo_registry_store_updates_yaml_without_dropping_existing_keys(tmp_path) -> None:
-    config_file = tmp_path / "agent.yml"
+    config_file = tmp_path / "registered_repos.yml"
     config_file.write_text(
         "\n".join(
             [
@@ -11,7 +11,7 @@ def test_repo_registry_store_updates_yaml_without_dropping_existing_keys(tmp_pat
                 "confluence:",
                 "  parent_page_id: \"123\"",
                 "app:",
-                "  repo_registry_file: config/agent.yml",
+                "  repo_registry_file: config/registered_repos.yml",
             ]
         ),
         encoding="utf-8",

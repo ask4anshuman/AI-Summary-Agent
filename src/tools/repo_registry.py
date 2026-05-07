@@ -1,5 +1,5 @@
 # Purpose : Multi-repo registration store. Reads and writes per-repo config (GitHub, LLM, Confluence
-#           credentials and path mappings) into config/agent.yml under a top-level `repos:` section.
+#           credentials and path mappings) into config/registered_repos.yml under a top-level `repos:` section.
 #           Automatically extracts secrets into .env as ${VAR} references so plaintext tokens
 #           are never committed to the YAML file.
 # Called by: src/api/routes.py (_build_runtime_config on every webhook, and all /repos/* endpoints).

@@ -81,7 +81,7 @@ class RepoLlmConfig(BaseModel):
     model: str = ""
     temperature: float = 0.1
     pr_summary_max_chars: int = 280
-    prompt_set: str = "default"
+    prompt_set: str = ""
 
 
 class RepoConfluenceConfig(BaseModel):
@@ -95,6 +95,7 @@ class RepoConfluenceConfig(BaseModel):
 
 class RepoPromptSet(BaseModel):
     """Custom prompt set definition. Contains system and user templates for 4 LLM operations."""
+    system_context: str = ""
     summary: dict[str, str] = Field(default_factory=lambda: {"system": "", "user": ""})
     doc_suggestion: dict[str, str] = Field(default_factory=lambda: {"system": "", "user": ""})
     pr_comment: dict[str, str] = Field(default_factory=lambda: {"system": "", "user": ""})
