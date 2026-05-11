@@ -21,7 +21,7 @@ class SQLDocumentationOrchestrator:
         if not analysis_sql:
             analysis_sql = current_sql or previous_sql
 
-        summary_response = self.llm_client.summarize_pr_change(
+        summary_response = self.llm_client.generate_pr_comment_summary(
             filename="manual.sql",
             status="modified",
             previous_filename="",

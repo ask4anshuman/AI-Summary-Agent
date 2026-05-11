@@ -9,36 +9,46 @@ from pydantic import BaseModel, Field
 
 
 class SummarizeRequest(BaseModel):
-    current_sql: str = Field(default="", description="Latest SQL text")
-    previous_sql: str = Field(default="", description="Previous SQL text")
-    diff: str = Field(default="", description="Optional precomputed unified diff")
+    """Request payload for local SQL summarize endpoint."""
+
+    sql: str = Field(default="", description="SQL text for local summarize testing")
     source: str = Field(default="manual", description="Source of request")
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class AgentResult(BaseModel):
+    """Normalized orchestrator result returned by summarize flows."""
+
     summary: str
     markdown: str
 
 
 class SummarizeResponse(BaseModel):
+    """Response payload for summarize endpoint."""
+
     ok: bool = True
     result: AgentResult
 
 
 class WebhookResponse(BaseModel):
+    """Generic webhook/API operation response."""
+
     ok: bool
     message: str
     markdown: str = ""
 
 
 class PRFileDocPayload(BaseModel):
+    """Per-file PR comment payload captured for later publish steps."""
+
     filename: str
     summary: str
     markdown: str
 
 
 class PublishedSQLDocPayload(BaseModel):
+    """Structured documentation payload used for Confluence page content."""
+
     filename: str
     full_summary: str
     sql_description: str
@@ -51,11 +61,15 @@ class PublishedSQLDocPayload(BaseModel):
 
 
 class RepoPathMapping(BaseModel):
+    """Maps SQL path prefixes to Confluence parent page IDs."""
+
     sql_path_prefix: str
     parent_page_id: str
 
 
 class RepoGithubConfig(BaseModel):
+    """Repository-level GitHub integration settings."""
+
     owner: str
     name: str
     token: str = ""
@@ -66,6 +80,8 @@ class RepoGithubConfig(BaseModel):
 
 
 class RepoLlmConfig(BaseModel):
+    """Repository-level LLM settings for model and prompt behavior."""
+
     api_key: str = ""
     base_url: str = ""
     model: str = ""
@@ -75,6 +91,8 @@ class RepoLlmConfig(BaseModel):
 
 
 class RepoConfluenceConfig(BaseModel):
+    """Repository-level Confluence connection and parent mapping settings."""
+
     base_url: str
     space: str
     username: str
@@ -84,13 +102,16 @@ class RepoConfluenceConfig(BaseModel):
 
 
 class RepoPromptSet(BaseModel):
-    """Custom prompt set definition. Contains system and user templates for 2 LLM operations."""
+    """Custom prompt set with system and user templates for pr_comment and publish."""
+
     system_context: str = ""
     pr_comment: dict[str, str] = Field(default_factory=lambda: {"system": "", "user": ""})
     publish: dict[str, str] = Field(default_factory=lambda: {"system": "", "user": ""})
 
 
 class RepoRegistrationRequest(BaseModel):
+    """Request payload to register or update a repository configuration."""
+
     github: RepoGithubConfig
     llm: RepoLlmConfig = Field(default_factory=RepoLlmConfig)
     confluence: RepoConfluenceConfig
@@ -98,6 +119,8 @@ class RepoRegistrationRequest(BaseModel):
 
 
 class RepoRegistrationResponse(BaseModel):
+    """Response payload returned after repository registration operations."""
+
     ok: bool
     message: str
     repo: str

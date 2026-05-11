@@ -313,16 +313,11 @@ def republish_pr(owner: str, repo: str, pull_number: int) -> WebhookResponse:
 
 @router.post("/summarize", response_model=SummarizeResponse)
 def summarize_sql(request: SummarizeRequest) -> SummarizeResponse:
-    if not request.diff and not request.current_sql and not request.previous_sql:
-        raise HTTPException(status_code=400, detail="Provide at least one of diff, current_sql, or previous_sql")
+    if not request.sql.strip():
+        raise HTTPException(status_code=400, detail="Provide sql for local summarize testing")
 
     runtime = _default_runtime_config()
-    result = _run_orchestrator(
-        runtime=runtime,
-        previous_sql=request.previous_sql,
-        current_sql=request.current_sql,
-        diff=request.diff,
-    )
+    result = _run_orchestrator(runtime=runtime, current_sql=request.sql)
     return SummarizeResponse(result=result)
 
 
@@ -713,21 +708,21 @@ def _build_github_pr_summary_comment(
     if modified_changes:
         sections.append("### Modified SQL Files")
         for change in modified_changes:
-            summary, doc_payload = _summarize_github_sql_change(change, runtime=runtime)
+            summary, doc_payload = _generate_pr_comment_summary_for_github_sql_change(change, runtime=runtime)
             doc_payloads.append(doc_payload.model_dump())
             sections.append(f"- **{change.filename}**: {summary}")
 
     if added_changes:
         sections.append("### New SQL Files")
         for change in added_changes:
-            summary, doc_payload = _summarize_github_sql_change(change, runtime=runtime)
+            summary, doc_payload = _generate_pr_comment_summary_for_github_sql_change(change, runtime=runtime)
             doc_payloads.append(doc_payload.model_dump())
             sections.append(f"- **{change.filename}**: {summary}")
 
     if deleted_changes:
         sections.append("### Deleted SQL Files")
         for change in deleted_changes:
-            summary, _ = _summarize_github_sql_change(change, runtime=runtime)
+            summary, _ = _generate_pr_comment_summary_for_github_sql_change(change, runtime=runtime)
             existing_page = confluence.find_page_for_filename(change.filename) if confluence.enabled else None
             page_url = str(existing_page.get("url", "")) if existing_page else ""
             if page_url:
@@ -856,7 +851,7 @@ def _refresh_pr_comment_after_publication(
     )
 
 
-def _summarize_github_sql_change(change: GithubPRSQLFileChange, runtime: RuntimeConfig) -> tuple[str, PRFileDocPayload]:
+def _generate_pr_comment_summary_for_github_sql_change(change: GithubPRSQLFileChange, runtime: RuntimeConfig) -> tuple[str, PRFileDocPayload]:
     patch_or_note = change.patch or "(Patch omitted by GitHub API payload for this file.)"
     diff = f"# File: {change.filename}\n{patch_or_note}"
     result = _run_orchestrator(runtime=runtime, diff=diff)

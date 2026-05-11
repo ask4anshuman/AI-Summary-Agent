@@ -1,10 +1,9 @@
 from fastapi.testclient import TestClient
 
 
-def test_summarize_with_current_and_previous_sql(client: TestClient) -> None:
+def test_summarize_with_sql(client: TestClient) -> None:
     payload = {
-        "previous_sql": "create table emp(id int);",
-        "current_sql": "create table emp(id int, name varchar(100));"
+        "sql": "create table emp(id int, name varchar(100));"
     }
     response = client.post("/summarize", json=payload)
     assert response.status_code == 200

@@ -35,8 +35,7 @@ http://localhost:8000/docs
 curl -X POST http://localhost:8000/summarize \
   -H "Content-Type: application/json" \
   -d '{
-    "previous_sql": "create table emp(id int);",
-    "current_sql": "create table emp(id int, name varchar(100));"
+    "sql": "create table emp(id int, name varchar(100));"
   }'
 ```
 
@@ -327,9 +326,7 @@ Analyze SQL manually (no webhook).
 **Request:**
 ```json
 {
-  "previous_sql": "...",
-  "current_sql": "...",
-  "diff": "..." (optional)
+  "sql": "..."
 }
 ```
 

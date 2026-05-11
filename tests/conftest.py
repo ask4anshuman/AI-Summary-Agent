@@ -5,7 +5,7 @@ from src.main import app
 from src.config import settings
 from src.tools.llm_tools import (
     LLMClient,
-    PRCommentOutput,
+    PRCommentSummaryOutput,
     PublishOutput,
 )
 
@@ -23,8 +23,8 @@ def mock_llm(monkeypatch: pytest.MonkeyPatch) -> None:
 
     monkeypatch.setattr(
         LLMClient,
-        "summarize_pr_change",
-        lambda self, **kwargs: PRCommentOutput(
+        "generate_pr_comment_summary",
+        lambda self, **kwargs: PRCommentSummaryOutput(
             summary="Mocked concise PR summary for SQL change.",
         ),
     )

@@ -21,7 +21,7 @@ class LLMInvocationError(RuntimeError):
     pass
 
 
-class PRCommentOutput(BaseModel):
+class PRCommentSummaryOutput(BaseModel):
     summary: str
 
 
@@ -84,14 +84,14 @@ class LLMClient:
     def enabled(self) -> bool:
         return True
 
-    def summarize_pr_change(
+    def generate_pr_comment_summary(
         self,
         *,
         filename: str,
         status: str,
         previous_filename: str,
         sql_diff: str,
-    ) -> PRCommentOutput:
+    ) -> PRCommentSummaryOutput:
         return self._invoke_structured(
             prompt_key="pr_comment",
             variables={
@@ -100,7 +100,7 @@ class LLMClient:
                 "previous_filename": previous_filename or "",
                 "sql_diff": sql_diff,
             },
-            output_model=PRCommentOutput,
+            output_model=PRCommentSummaryOutput,
         )
 
     def generate_publish_doc(
